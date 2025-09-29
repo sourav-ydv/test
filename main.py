@@ -13,8 +13,6 @@ from openai import OpenAI
 # =========================
 # OpenAI Client
 # =========================
-# Make sure your API key is set in Streamlit Cloud Secrets:
-# Key: OPENAI_API_KEY
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 # =========================
@@ -29,9 +27,10 @@ parkinsons_model = pickle.load(open('parkinsons_model.sav', 'rb'))
 # =========================
 with st.sidebar:
     selected = option_menu(
-        'Multiple Disease Prediction System',
+        '🧑‍⚕️ Multiple Disease Prediction System',
         ['Diabetes Prediction', 'Heart Disease Prediction', "Parkinson's Prediction"],
         icons=['activity', 'heart', 'person'],
+        menu_icon="hospital",
         default_index=0
     )
 
@@ -61,6 +60,7 @@ def get_chatbot_response(disease, diagnosis, user_input, user_query):
         ]
     )
     return response.choices[0].message.content
+
 
 # =========================
 # Diabetes Prediction Page
@@ -115,10 +115,11 @@ if selected == 'Diabetes Prediction':
         st.session_state.chat_diab.append({"role": "assistant", "content": bot_reply})
         st.chat_message("assistant").write(bot_reply)
 
+
 # =========================
 # Heart Disease Prediction Page
 # =========================
-if selected == 'Heart Disease Prediction':
+elif selected == 'Heart Disease Prediction':
     st.title('❤️ Heart Disease Prediction using ML')
 
     col1, col2, col3 = st.columns(3)
@@ -173,10 +174,11 @@ if selected == 'Heart Disease Prediction':
         st.session_state.chat_heart.append({"role": "assistant", "content": bot_reply})
         st.chat_message("assistant").write(bot_reply)
 
+
 # =========================
 # Parkinson's Prediction Page
 # =========================
-if selected == "Parkinson's Prediction":
+elif selected == "Parkinson's Prediction":
     st.title("🧠 Parkinson's Disease Prediction using ML")
 
     col1, col2, col3, col4, col5 = st.columns(5)
