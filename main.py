@@ -8,7 +8,6 @@ Created on Mon Sep 29 20:54:02 2025
 import pickle
 import streamlit as st
 from streamlit_option_menu import option_menu
-import os
 from openai import OpenAI
 
 # =========================
@@ -17,7 +16,7 @@ from openai import OpenAI
 # Store your API key safely: 
 #   In terminal: streamlit secrets set OPENAI_API_KEY "your_api_key"
 #   Or in .streamlit/secrets.toml
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 # =========================
 # Load Models
