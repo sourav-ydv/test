@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Sep 29 20:54:02 2025
-
+Created on Thu Sep 25 17:00:19 2025
 @author: sksou
 """
 
@@ -13,13 +12,13 @@ from openai import OpenAI
 # =========================
 # OpenAI Client
 # =========================
-# Store your API key safely: 
-#   In terminal: streamlit secrets set OPENAI_API_KEY "your_api_key"
-#   Or in .streamlit/secrets.toml
+# Make sure to add your API key in Streamlit Cloud Secrets:
+# Key: OPENAI_API_KEY
+# Value: sk-your_api_key_here
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 # =========================
-# Load Models
+# Load Saved Models
 # =========================
 diabetes_model = pickle.load(open('diabetes_model.sav', 'rb'))
 heart_disease_model = pickle.load(open('heart_disease_model.sav', 'rb'))
@@ -40,12 +39,6 @@ with st.sidebar:
 # Helper: AI Chatbot
 # =========================
 def get_chatbot_response(disease, diagnosis, user_input, user_query):
-    """
-    disease: which disease is being checked (Diabetes/Heart/Parkinson's)
-    diagnosis: model output (positive/negative)
-    user_input: dict of user-provided parameters
-    user_query: string from chat box
-    """
     prompt = f"""
     You are a medical assistant chatbot. 
     The patient is being checked for {disease}.
@@ -69,12 +62,11 @@ def get_chatbot_response(disease, diagnosis, user_input, user_query):
     )
     return response.choices[0].message.content
 
-
 # =========================
-# Diabetes Page
+# DIABETES PREDICTION
 # =========================
 if selected == 'Diabetes Prediction':
-    st.title('Diabetes Prediction using ML')
+    st.title('🩸 Diabetes Prediction using ML')
 
     col1, col2, col3 = st.columns(3)
 
@@ -100,7 +92,7 @@ if selected == 'Diabetes Prediction':
     diab_diagnosis = ''
     user_input_dict = {}
 
-    if st.button('Get Diabetes Test Result'):
+    if st.button('🔍 Get Diabetes Test Result'):
         try:
             user_input = [
                 int(Pregnancies), int(Glucose), int(BloodPressure),
@@ -117,18 +109,18 @@ if selected == 'Diabetes Prediction':
             }
 
             if diab_prediction[0] == 1:
-                diab_diagnosis = 'The person is **Diabetic**'
+                diab_diagnosis = 'The person **is Diabetic**'
             else:
-                diab_diagnosis = 'The person is **Not Diabetic**'
+                diab_diagnosis = 'The person **is Not Diabetic**'
 
         except ValueError:
-            diab_diagnosis = "Please enter valid numeric values."
+            diab_diagnosis = "⚠️ Please enter valid numeric values."
 
     st.success(diab_diagnosis)
 
     # Chatbot Section
     if diab_diagnosis:
-        st.subheader("Diabetes Assistant Chatbot")
+        st.subheader("💬 Diabetes Assistant Chatbot")
         if "chat_diab" not in st.session_state:
             st.session_state.chat_diab = []
 
@@ -143,12 +135,11 @@ if selected == 'Diabetes Prediction':
             st.session_state.chat_diab.append({"role": "assistant", "content": bot_reply})
             st.chat_message("assistant").write(bot_reply)
 
-
 # =========================
-# Heart Disease Page
+# HEART DISEASE PREDICTION
 # =========================
 if selected == 'Heart Disease Prediction':
-    st.title('Heart Disease Prediction using ML')
+    st.title('❤️ Heart Disease Prediction using ML')
 
     col1, col2, col3 = st.columns(3)
 
@@ -186,7 +177,7 @@ if selected == 'Heart Disease Prediction':
     heart_diagnosis = ''
     user_input_dict = {}
 
-    if st.button('Get Heart Disease Test Result'):
+    if st.button('🔍 Get Heart Disease Test Result'):
         try:
             user_input = [
                 int(age), int(sex), int(cp), int(trestbps), int(chol),
@@ -207,13 +198,13 @@ if selected == 'Heart Disease Prediction':
             else:
                 heart_diagnosis = 'The person **does not have Heart Disease**'
         except ValueError:
-            heart_diagnosis = "Please enter valid numeric values."
+            heart_diagnosis = "⚠️ Please enter valid numeric values."
 
     st.success(heart_diagnosis)
 
     # Chatbot Section
     if heart_diagnosis:
-        st.subheader("Heart Disease Assistant Chatbot")
+        st.subheader("💬 Heart Disease Assistant Chatbot")
         if "chat_heart" not in st.session_state:
             st.session_state.chat_heart = []
 
@@ -228,12 +219,11 @@ if selected == 'Heart Disease Prediction':
             st.session_state.chat_heart.append({"role": "assistant", "content": bot_reply})
             st.chat_message("assistant").write(bot_reply)
 
-
 # =========================
-# Parkinson's Page
+# PARKINSON'S PREDICTION
 # =========================
 if selected == "Parkinson's Prediction":
-    st.title("Parkinson's Disease Prediction using ML")
+    st.title("🧠 Parkinson's Disease Prediction using ML")
 
     col1, col2, col3, col4, col5 = st.columns(5)
 
@@ -289,7 +279,7 @@ if selected == "Parkinson's Prediction":
     parkinsons_diagnosis = ''
     user_input_dict = {}
 
-    if st.button("Get Parkinson's Test Result"):
+    if st.button("🔍 Get Parkinson's Test Result"):
         try:
             user_input = [
                 float(fo), float(fhi), float(flo), float(Jitter_percent),
@@ -314,13 +304,13 @@ if selected == "Parkinson's Prediction":
             else:
                 parkinsons_diagnosis = "The person **does not have Parkinson's Disease**"
         except ValueError:
-            parkinsons_diagnosis = "Please enter valid numeric values."
+            parkinsons_diagnosis = "⚠️ Please enter valid numeric values."
 
     st.success(parkinsons_diagnosis)
 
     # Chatbot Section
     if parkinsons_diagnosis:
-        st.subheader("Parkinson's Assistant Chatbot")
+        st.subheader("💬 Parkinson's Assistant Chatbot")
         if "chat_parkinsons" not in st.session_state:
             st.session_state.chat_parkinsons = []
 
