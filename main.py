@@ -1,39 +1,23 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Sep 29 2025
-
 @author: sksou
 """
 
 import pickle
 import streamlit as st
 from streamlit_option_menu import option_menu
-from openai import OpenAI
+from transformers import pipeline
 
 # =========================
-# OpenAI Client
+# Hugging Face Chatbot Setup
 # =========================
-# Make sure your API key is set in Streamlit Cloud Secrets:
-# Key: OPENAI_API_KEY
-client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+# Load free model (first run downloads ~1GB)
+@st.cache_resource
+def load_chatbot():
+    return pipeline("text2text-generation", model="google/flan-t5-base")
 
-# =========================
-# Load Saved Models
-# =========================
-diabetes_model = pickle.load(open('diabetes_model.sav', 'rb'))
-heart_disease_model = pickle.load(open('heart_disease_model.sav', 'rb'))
-parkinsons_model = pickle.load(open('parkinsons_model.sav', 'rb'))
-
-# =========================
-# Sidebar Navigation
-# =========================
-with st.sidebar:
-    selected = option_menu(
-        'Multiple Disease Prediction System',
-        ['Diabetes Prediction', 'Heart Disease Prediction', "Parkinson's Prediction"],
-        icons=['activity', 'heart', 'person'],
-        default_index=0
-    )
+chatbot = load_chatbot()
 
 # =========================
 # Helper: AI Chatbot
@@ -52,15 +36,26 @@ def get_chatbot_response(disease, diagnosis, user_input, user_query):
     severity estimation if possible, and lifestyle modifications in simple language. 
     Always include a disclaimer to consult a doctor.
     """
+    output = chatbot(prompt, max_length=256, do_sample=True)
+    return output[0]['generated_text']
 
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": "You are a helpful medical assistant."},
-            {"role": "user", "content": prompt}
-        ]
+# =========================
+# Load Saved Models
+# =========================
+diabetes_model = pickle.load(open('diabetes_model.sav', 'rb'))
+heart_disease_model = pickle.load(open('heart_disease_model.sav', 'rb'))
+parkinsons_model = pickle.load(open('parkinsons_model.sav', 'rb'))
+
+# =========================
+# Sidebar Navigation
+# =========================
+with st.sidebar:
+    selected = option_menu(
+        'Multiple Disease Prediction System',
+        ['Diabetes Prediction', 'Heart Disease Prediction', "Parkinson's Prediction"],
+        icons=['activity', 'heart', 'person'],
+        default_index=0
     )
-    return response.choices[0].message.content
 
 # =========================
 # Diabetes Prediction Page
@@ -102,18 +97,18 @@ if selected == 'Diabetes Prediction':
         except ValueError:
             diab_diagnosis = "⚠️ Please enter valid numeric values."
 
-    st.success(diab_diagnosis)
+        st.success(diab_diagnosis)
 
-    # Chatbot Section
-    st.subheader("💬 Diabetes Assistant Chatbot")
-    if "chat_diab" not in st.session_state: st.session_state.chat_diab = []
-    for msg in st.session_state.chat_diab: st.chat_message(msg["role"]).write(msg["content"])
-    if user_query := st.chat_input("Ask about your diabetes condition..."):
-        st.session_state.chat_diab.append({"role": "user", "content": user_query})
-        st.chat_message("user").write(user_query)
-        bot_reply = get_chatbot_response("Diabetes", diab_diagnosis, user_input_dict, user_query)
-        st.session_state.chat_diab.append({"role": "assistant", "content": bot_reply})
-        st.chat_message("assistant").write(bot_reply)
+        # Chatbot Section (appears only after prediction)
+        st.subheader("💬 Diabetes Assistant Chatbot")
+        if "chat_diab" not in st.session_state: st.session_state.chat_diab = []
+        for msg in st.session_state.chat_diab: st.chat_message(msg["role"]).write(msg["content"])
+        if user_query := st.chat_input("Ask about your diabetes condition..."):
+            st.session_state.chat_diab.append({"role": "user", "content": user_query})
+            st.chat_message("user").write(user_query)
+            bot_reply = get_chatbot_response("Diabetes", diab_diagnosis, user_input_dict, user_query)
+            st.session_state.chat_diab.append({"role": "assistant", "content": bot_reply})
+            st.chat_message("assistant").write(bot_reply)
 
 # =========================
 # Heart Disease Prediction Page
@@ -160,18 +155,18 @@ if selected == 'Heart Disease Prediction':
         except ValueError:
             heart_diagnosis = "⚠️ Please enter valid numeric values."
 
-    st.success(heart_diagnosis)
+        st.success(heart_diagnosis)
 
-    # Chatbot Section
-    st.subheader("💬 Heart Disease Assistant Chatbot")
-    if "chat_heart" not in st.session_state: st.session_state.chat_heart = []
-    for msg in st.session_state.chat_heart: st.chat_message(msg["role"]).write(msg["content"])
-    if user_query := st.chat_input("Ask about your heart condition..."):
-        st.session_state.chat_heart.append({"role": "user", "content": user_query})
-        st.chat_message("user").write(user_query)
-        bot_reply = get_chatbot_response("Heart Disease", heart_diagnosis, user_input_dict, user_query)
-        st.session_state.chat_heart.append({"role": "assistant", "content": bot_reply})
-        st.chat_message("assistant").write(bot_reply)
+        # Chatbot Section
+        st.subheader("💬 Heart Disease Assistant Chatbot")
+        if "chat_heart" not in st.session_state: st.session_state.chat_heart = []
+        for msg in st.session_state.chat_heart: st.chat_message(msg["role"]).write(msg["content"])
+        if user_query := st.chat_input("Ask about your heart condition..."):
+            st.session_state.chat_heart.append({"role": "user", "content": user_query})
+            st.chat_message("user").write(user_query)
+            bot_reply = get_chatbot_response("Heart Disease", heart_diagnosis, user_input_dict, user_query)
+            st.session_state.chat_heart.append({"role": "assistant", "content": bot_reply})
+            st.chat_message("assistant").write(bot_reply)
 
 # =========================
 # Parkinson's Prediction Page
@@ -231,15 +226,15 @@ if selected == "Parkinson's Prediction":
         except ValueError:
             parkinsons_diagnosis = "⚠️ Please enter valid numeric values."
 
-    st.success(parkinsons_diagnosis)
+        st.success(parkinsons_diagnosis)
 
-    # Chatbot Section
-    st.subheader("💬 Parkinson's Assistant Chatbot")
-    if "chat_parkinsons" not in st.session_state: st.session_state.chat_parkinsons = []
-    for msg in st.session_state.chat_parkinsons: st.chat_message(msg["role"]).write(msg["content"])
-    if user_query := st.chat_input("Ask about Parkinson's condition..."):
-        st.session_state.chat_parkinsons.append({"role": "user", "content": user_query})
-        st.chat_message("user").write(user_query)
-        bot_reply = get_chatbot_response("Parkinson's Disease", parkinsons_diagnosis, user_input_dict, user_query)
-        st.session_state.chat_parkinsons.append({"role": "assistant", "content": bot_reply})
-        st.chat_message("assistant").write(bot_reply)
+        # Chatbot Section
+        st.subheader("💬 Parkinson's Assistant Chatbot")
+        if "chat_parkinsons" not in st.session_state: st.session_state.chat_parkinsons = []
+        for msg in st.session_state.chat_parkinsons: st.chat_message(msg["role"]).write(msg["content"])
+        if user_query := st.chat_input("Ask about Parkinson's condition..."):
+            st.session_state.chat_parkinsons.append({"role": "user", "content": user_query})
+            st.chat_message("user").write(user_query)
+            bot_reply = get_chatbot_response("Parkinson's Disease", parkinsons_diagnosis, user_input_dict, user_query)
+            st.session_state.chat_parkinsons.append({"role": "assistant", "content": bot_reply})
+            st.chat_message("assistant").write(bot_reply)
