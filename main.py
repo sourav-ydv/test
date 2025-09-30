@@ -1,42 +1,46 @@
 import streamlit as st
 import pickle
-import numpy as np
 from streamlit_option_menu import option_menu
 from transformers import pipeline
 
 # =========================
 # Hugging Face Chatbot Setup
 # =========================
-chatbot = pipeline("text-generation", model="distilgpt2")
+@st.cache_resource
+def load_chatbot():
+    return pipeline("text2text-generation", model="google/flan-t5-small")
 
-def get_chatbot_response(disease_name, diagnosis, user_query):
+chatbot = load_chatbot()
+
+def get_chatbot_response(disease_name, diagnosis, user_query, summary=False):
     """
-    Generate response using Hugging Face text-generation.
+    Generate response using Hugging Face Flan-T5.
+    If summary=True, give concise summary of the diagnosis and advice.
     Strictly answer only disease-related queries.
     """
-    # Check if query is unrelated to the disease
-    if not any(word in user_query.lower() for word in [disease_name.lower(), "symptom", "treatment", "diet", "exercise", "doctor", "medicine", "condition", "health", "cure", "prevent", "risk"]):
-        return f"I can only answer questions about {disease_name}. Please ask about symptoms, treatments, lifestyle, or precautions."
+    if not summary:
+        # Disease-only filter
+        if not any(word in user_query.lower() for word in [disease_name.lower(), "symptom", "treatment", "diet", "exercise", "doctor", "medicine", "condition", "health", "cure", "prevent", "risk"]):
+            return f"I can only answer questions about {disease_name}. Please ask about symptoms, treatments, lifestyle, or precautions."
 
-    # Construct disease-specific prompt
-    prompt = (
-        f"You are a helpful medical assistant. The user has been diagnosed with {disease_name}. "
-        f"Diagnosis details: {diagnosis}. "
-        f"The user asked: {user_query}\n\n"
-        f"Provide a clear and helpful answer related to {disease_name}. "
-        f"Include suggestions, lifestyle tips, and a disclaimer to consult a doctor."
-    )
+        prompt = (
+            f"You are a helpful medical assistant. The user has {disease_name}. "
+            f"Diagnosis: {diagnosis}. "
+            f"The user asked: {user_query}\n\n"
+            f"Provide a clear, helpful answer including suggestions, lifestyle tips, and a disclaimer to consult a doctor."
+        )
+    else:
+        # Summary prompt
+        prompt = (
+            f"You are a helpful medical assistant. The user has {disease_name}. "
+            f"Diagnosis: {diagnosis}. "
+            f"Provide a concise summary of the condition, including severity, lifestyle suggestions, precautions, and any advice. "
+            f"Make it short, clear, and include a disclaimer to consult a doctor."
+        )
 
-    response = chatbot(
-        prompt,
-        max_length=200,
-        do_sample=True,
-        temperature=0.7,
-        top_p=0.9,
-        num_return_sequences=1
-    )
-
+    response = chatbot(prompt, max_length=200)
     return response[0]['generated_text'].replace(prompt, "").strip()
+
 
 # =========================
 # Load Saved Models
@@ -59,204 +63,149 @@ with st.sidebar:
     )
 
 # =========================
-# Diabetes Prediction Page
+# Diabetes Prediction
 # =========================
 if selected == "Diabetes":
     st.title("Diabetes Prediction")
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        Pregnancies = st.number_input("Number of Pregnancies", min_value=0, max_value=20, value=0)
-    with col2:
-        Glucose = st.number_input("Glucose Level", min_value=0, max_value=300, value=120)
-    with col3:
-        BloodPressure = st.number_input("Blood Pressure value", min_value=0, max_value=200, value=70)
-    with col1:
-        SkinThickness = st.number_input("Skin Thickness value", min_value=0, max_value=100, value=20)
-    with col2:
-        Insulin = st.number_input("Insulin Level", min_value=0, max_value=900, value=80)
-    with col3:
-        BMI = st.number_input("BMI value", min_value=0.0, max_value=70.0, value=25.0)
-    with col1:
-        DiabetesPedigreeFunction = st.number_input("Diabetes Pedigree Function value", min_value=0.0, max_value=2.5, value=0.5)
-    with col2:
-        Age = st.number_input("Age of the Person", min_value=0, max_value=120, value=30)
+    Pregnancies = st.text_input("Number of Pregnancies")
+    Glucose = st.text_input("Glucose Level")
+    BloodPressure = st.text_input("Blood Pressure")
+    SkinThickness = st.text_input("Skin Thickness")
+    Insulin = st.text_input("Insulin Level")
+    BMI = st.text_input("BMI")
+    DiabetesPedigreeFunction = st.text_input("Diabetes Pedigree Function")
+    Age = st.text_input("Age")
 
     diab_diagnosis = ""
 
     if st.button("Diabetes Test Result"):
-        diab_prediction = diabetes_model.predict([[Pregnancies, Glucose, BloodPressure, SkinThickness,
-                                                  Insulin, BMI, DiabetesPedigreeFunction, Age]])
-
-        if diab_prediction[0] == 1:
-            diab_diagnosis = "You have diabetes."
-        else:
-            diab_diagnosis = "You do not have diabetes."
-
+        try:
+            user_input = [int(Pregnancies), int(Glucose), int(BloodPressure), int(SkinThickness),
+                          int(Insulin), float(BMI), float(DiabetesPedigreeFunction), int(Age)]
+            diab_prediction = diabetes_model.predict([user_input])
+            diab_diagnosis = "You have diabetes." if diab_prediction[0] == 1 else "You do not have diabetes."
+        except:
+            diab_diagnosis = "⚠️ Invalid input, please enter numeric values."
         st.success(diab_diagnosis)
 
-        # Chatbot after prediction
-        if "chat_diab" not in st.session_state:
-            st.session_state.chat_diab = []
+        # Chatbot Section
+        if "chat_diab" not in st.session_state: st.session_state.chat_diab = []
+        st.subheader("💬 Chat with Diabetes Assistant")
+        for msg in st.session_state.chat_diab: st.chat_message(msg["role"]).write(msg["content"])
 
-        st.subheader("Chat with Medical Assistant")
-        for msg in st.session_state.chat_diab:
-            st.chat_message(msg["role"]).write(msg["content"])
+        if st.button("📋 Get Summary of Condition"):
+            summary_text = get_chatbot_response("Diabetes", diab_diagnosis, "", summary=True)
+            st.info(summary_text)
 
         if user_query := st.chat_input("Ask about your diabetes condition..."):
             st.session_state.chat_diab.append({"role": "user", "content": user_query})
             st.chat_message("user").write(user_query)
-
             bot_reply = get_chatbot_response("Diabetes", diab_diagnosis, user_query)
             st.session_state.chat_diab.append({"role": "assistant", "content": bot_reply})
             st.chat_message("assistant").write(bot_reply)
 
 
 # =========================
-# Heart Disease Prediction Page
+# Heart Disease Prediction
 # =========================
 if selected == "Heart Disease":
     st.title("Heart Disease Prediction")
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        age = st.number_input("Age", min_value=0, max_value=120, value=45)
-    with col2:
-        sex = st.selectbox("Sex (1 = Male, 0 = Female)", [1, 0])
-    with col3:
-        cp = st.number_input("Chest Pain types (0-3)", min_value=0, max_value=3, value=0)
-    with col1:
-        trestbps = st.number_input("Resting Blood Pressure", min_value=0, max_value=200, value=120)
-    with col2:
-        chol = st.number_input("Serum Cholesterol in mg/dl", min_value=0, max_value=600, value=200)
-    with col3:
-        fbs = st.selectbox("Fasting Blood Sugar > 120 mg/dl (1 = True, 0 = False)", [1, 0])
-    with col1:
-        restecg = st.number_input("Resting Electrocardiographic results (0-2)", min_value=0, max_value=2, value=1)
-    with col2:
-        thalach = st.number_input("Maximum Heart Rate achieved", min_value=0, max_value=300, value=150)
-    with col3:
-        exang = st.selectbox("Exercise Induced Angina (1 = Yes, 0 = No)", [1, 0])
-    with col1:
-        oldpeak = st.number_input("ST depression induced by exercise", min_value=0.0, max_value=10.0, value=1.0)
-    with col2:
-        slope = st.number_input("Slope of the peak exercise ST segment (0-2)", min_value=0, max_value=2, value=1)
-    with col3:
-        ca = st.number_input("Major vessels colored by fluoroscopy (0-3)", min_value=0, max_value=3, value=0)
-    with col1:
-        thal = st.number_input("Thal (0-3)", min_value=0, max_value=3, value=1)
+    age = st.text_input("Age")
+    sex = st.text_input("Sex (0 = Female, 1 = Male)")
+    cp = st.text_input("Chest Pain Type (0–3)")
+    trestbps = st.text_input("Resting Blood Pressure")
+    chol = st.text_input("Cholesterol")
+    fbs = st.text_input("Fasting Blood Sugar >120 mg/dl (0/1)")
+    restecg = st.text_input("Resting ECG (0–2)")
+    thalach = st.text_input("Max Heart Rate")
+    exang = st.text_input("Exercise Induced Angina (0/1)")
+    oldpeak = st.text_input("ST Depression")
+    slope = st.text_input("Slope of Peak Exercise ST (0–2)")
+    ca = st.text_input("Major vessels colored (0–3)")
+    thal = st.text_input("Thal (0–3)")
 
     heart_diagnosis = ""
 
     if st.button("Heart Disease Test Result"):
-        heart_prediction = heart_model.predict([[age, sex, cp, trestbps, chol, fbs, restecg,
-                                                 thalach, exang, oldpeak, slope, ca, thal]])
-
-        if heart_prediction[0] == 1:
-            heart_diagnosis = "You have heart disease."
-        else:
-            heart_diagnosis = "You do not have heart disease."
-
+        try:
+            user_input = [int(age), int(sex), int(cp), int(trestbps), int(chol),
+                          int(fbs), int(restecg), int(thalach), int(exang),
+                          float(oldpeak), int(slope), int(ca), int(thal)]
+            heart_prediction = heart_model.predict([user_input])
+            heart_diagnosis = "You have heart disease." if heart_prediction[0] == 1 else "You do not have heart disease."
+        except:
+            heart_diagnosis = "⚠️ Invalid input, please enter numeric values."
         st.success(heart_diagnosis)
 
-        # Chatbot after prediction
-        if "chat_heart" not in st.session_state:
-            st.session_state.chat_heart = []
+        if "chat_heart" not in st.session_state: st.session_state.chat_heart = []
+        st.subheader("💬 Chat with Heart Disease Assistant")
+        for msg in st.session_state.chat_heart: st.chat_message(msg["role"]).write(msg["content"])
 
-        st.subheader("Chat with Medical Assistant")
-        for msg in st.session_state.chat_heart:
-            st.chat_message(msg["role"]).write(msg["content"])
+        if st.button("📋 Get Summary of Condition"):
+            summary_text = get_chatbot_response("Heart Disease", heart_diagnosis, "", summary=True)
+            st.info(summary_text)
 
         if user_query := st.chat_input("Ask about your heart condition..."):
             st.session_state.chat_heart.append({"role": "user", "content": user_query})
             st.chat_message("user").write(user_query)
-
             bot_reply = get_chatbot_response("Heart Disease", heart_diagnosis, user_query)
             st.session_state.chat_heart.append({"role": "assistant", "content": bot_reply})
             st.chat_message("assistant").write(bot_reply)
 
 
 # =========================
-# Parkinson's Disease Prediction Page
+# Parkinson's Disease Prediction
 # =========================
 if selected == "Parkinsons":
     st.title("Parkinson's Disease Prediction")
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        fo = st.number_input("MDVP:Fo(Hz)", value=120.0)
-    with col2:
-        fhi = st.number_input("MDVP:Fhi(Hz)", value=150.0)
-    with col3:
-        flo = st.number_input("MDVP:Flo(Hz)", value=85.0)
-    with col1:
-        Jitter_percent = st.number_input("MDVP:Jitter(%)", value=0.005)
-    with col2:
-        Jitter_Abs = st.number_input("MDVP:Jitter(Abs)", value=0.00005)
-    with col3:
-        RAP = st.number_input("MDVP:RAP", value=0.003)
-    with col1:
-        PPQ = st.number_input("MDVP:PPQ", value=0.003)
-    with col2:
-        DDP = st.number_input("Jitter:DDP", value=0.01)
-    with col3:
-        Shimmer = st.number_input("MDVP:Shimmer", value=0.02)
-    with col1:
-        Shimmer_dB = st.number_input("MDVP:Shimmer(dB)", value=0.2)
-    with col2:
-        APQ3 = st.number_input("Shimmer:APQ3", value=0.01)
-    with col3:
-        APQ5 = st.number_input("Shimmer:APQ5", value=0.02)
-    with col1:
-        APQ = st.number_input("MDVP:APQ", value=0.03)
-    with col2:
-        DDA = st.number_input("Shimmer:DDA", value=0.03)
-    with col3:
-        NHR = st.number_input("NHR", value=0.01)
-    with col1:
-        HNR = st.number_input("HNR", value=20.0)
-    with col2:
-        RPDE = st.number_input("RPDE", value=0.5)
-    with col3:
-        DFA = st.number_input("DFA", value=0.6)
-    with col1:
-        spread1 = st.number_input("spread1", value=-4.0)
-    with col2:
-        spread2 = st.number_input("spread2", value=0.3)
-    with col3:
-        D2 = st.number_input("D2", value=2.0)
-    with col1:
-        PPE = st.number_input("PPE", value=0.2)
+    fo = st.text_input("MDVP:Fo(Hz)")
+    fhi = st.text_input("MDVP:Fhi(Hz)")
+    flo = st.text_input("MDVP:Flo(Hz)")
+    Jitter_percent = st.text_input("MDVP:Jitter(%)")
+    Jitter_Abs = st.text_input("MDVP:Jitter(Abs)")
+    RAP = st.text_input("MDVP:RAP")
+    PPQ = st.text_input("MDVP:PPQ")
+    DDP = st.text_input("Jitter:DDP")
+    Shimmer = st.text_input("MDVP:Shimmer")
+    Shimmer_dB = st.text_input("MDVP:Shimmer(dB)")
+    APQ3 = st.text_input("Shimmer:APQ3")
+    APQ5 = st.text_input("Shimmer:APQ5")
+    APQ = st.text_input("MDVP:APQ")
+    DDA = st.text_input("Shimmer:DDA")
+    NHR = st.text_input("NHR")
+    HNR = st.text_input("HNR")
+    RPDE = st.text_input("RPDE")
+    DFA = st.text_input("DFA")
+    spread1 = st.text_input("Spread1")
+    spread2 = st.text_input("Spread2")
+    D2 = st.text_input("D2")
+    PPE = st.text_input("PPE")
 
     parkinsons_diagnosis = ""
 
     if st.button("Parkinson's Test Result"):
-        parkinsons_prediction = parkinsons_model.predict([[fo, fhi, flo, Jitter_percent, Jitter_Abs, RAP, PPQ, DDP,
-                                                           Shimmer, Shimmer_dB, APQ3, APQ5, APQ, DDA, NHR, HNR,
-                                                           RPDE, DFA, spread1, spread2, D2, PPE]])
-
-        if parkinsons_prediction[0] == 1:
-            parkinsons_diagnosis = "You have Parkinson's disease."
-        else:
-            parkinsons_diagnosis = "You do not have Parkinson's disease."
-
+        try:
+            user_input = [float(fo), float(fhi), float(flo), float(Jitter_percent), float(Jitter_Abs),
+                          float(RAP), float(PPQ), float(DDP), float(Shimmer), float(Shimmer_dB),
+                          float(APQ3), float(APQ5), float(APQ), float(DDA), float(NHR), float(HNR),
+                          float(RPDE), float(DFA), float(spread1), float(spread2), float(D2), float(PPE)]
+            parkinsons_prediction = parkinsons_model.predict([user_input])
+            parkinsons_diagnosis = "You have Parkinson's disease." if parkinsons_prediction[0] == 1 else "You do not have Parkinson's disease."
+        except:
+            parkinsons_diagnosis = "⚠️ Invalid input, please enter numeric values."
         st.success(parkinsons_diagnosis)
 
-        # Chatbot after prediction
-        if "chat_parkinsons" not in st.session_state:
-            st.session_state.chat_parkinsons = []
+        if "chat_parkinsons" not in st.session_state: st.session_state.chat_parkinsons = []
+        st.subheader("💬 Chat with Parkinson's Assistant")
+        for msg in st.session_state.chat_parkinsons: st.chat_message(msg["role"]).write(msg["content"])
 
-        st.subheader("Chat with Medical Assistant")
-        for msg in st.session_state.chat_parkinsons:
-            st.chat_message(msg["role"]).write(msg["content"])
+        if st.button("📋 Get Summary of Condition"):
+            summary_text = get_chatbot_response("Parkinson's disease", parkinsons_diagnosis, "", summary=True)
+            st.info(summary_text)
 
         if user_query := st.chat_input("Ask about your Parkinson's condition..."):
             st.session_state.chat_parkinsons.append({"role": "user", "content": user_query})
             st.chat_message("user").write(user_query)
-
             bot_reply = get_chatbot_response("Parkinson's disease", parkinsons_diagnosis, user_query)
             st.session_state.chat_parkinsons.append({"role": "assistant", "content": bot_reply})
             st.chat_message("assistant").write(bot_reply)
