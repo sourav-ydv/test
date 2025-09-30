@@ -31,11 +31,8 @@ def get_chatbot_response(disease, diagnosis, user_input, user_query):
 
     The user is asking: {user_query}
 
-    ⚠️ IMPORTANT: Only answer questions related to {disease}.
-    If the question is unrelated, politely refuse and redirect to {disease}.
-    
     Based on the data and diagnosis, provide suggestions, precautions, 
-    severity estimation if possible, and lifestyle modifications in simple language. 
+    severity estimation if possible, and lifestyle modifications in simple language.
     Always include a disclaimer to consult a doctor.
     """
     output = chatbot(prompt, max_length=256, do_sample=True)
@@ -75,8 +72,12 @@ if selected == 'Diabetes Prediction':
     with col1: DiabetesPedigreeFunction = st.text_input('Diabetes Pedigree Function')
     with col2: Age = st.text_input('Age (years)')
 
-    diab_diagnosis = ''
-    user_input_dict = {}
+    # Init session_state
+    if "diab_done" not in st.session_state:
+        st.session_state.diab_done = False
+        st.session_state.diab_diagnosis = ""
+        st.session_state.diab_input = {}
+        st.session_state.chat_diab = []
 
     if st.button('🔍 Get Diabetes Test Result'):
         try:
@@ -86,29 +87,30 @@ if selected == 'Diabetes Prediction':
                 float(DiabetesPedigreeFunction), int(Age)
             ]
             diab_prediction = diabetes_model.predict([user_input])
-            user_input_dict = {
+            st.session_state.diab_input = {
                 "Pregnancies": Pregnancies, "Glucose": Glucose,
                 "BloodPressure": BloodPressure, "SkinThickness": SkinThickness,
                 "Insulin": Insulin, "BMI": BMI,
                 "DiabetesPedigreeFunction": DiabetesPedigreeFunction, "Age": Age
             }
             if diab_prediction[0] == 1:
-                diab_diagnosis = 'The person **is Diabetic**'
+                st.session_state.diab_diagnosis = 'The person **is Diabetic**'
             else:
-                diab_diagnosis = 'The person **is Not Diabetic**'
+                st.session_state.diab_diagnosis = 'The person **is Not Diabetic**'
         except ValueError:
-            diab_diagnosis = "⚠️ Please enter valid numeric values."
+            st.session_state.diab_diagnosis = "⚠️ Please enter valid numeric values."
 
-        st.success(diab_diagnosis)
+        st.session_state.diab_done = True
 
-        # Chatbot Section (appears only after prediction)
+    if st.session_state.diab_done:
+        st.success(st.session_state.diab_diagnosis)
         st.subheader("💬 Diabetes Assistant Chatbot")
-        if "chat_diab" not in st.session_state: st.session_state.chat_diab = []
-        for msg in st.session_state.chat_diab: st.chat_message(msg["role"]).write(msg["content"])
+        for msg in st.session_state.chat_diab:
+            st.chat_message(msg["role"]).write(msg["content"])
         if user_query := st.chat_input("Ask about your diabetes condition..."):
             st.session_state.chat_diab.append({"role": "user", "content": user_query})
             st.chat_message("user").write(user_query)
-            bot_reply = get_chatbot_response("Diabetes", diab_diagnosis, user_input_dict, user_query)
+            bot_reply = get_chatbot_response("Diabetes", st.session_state.diab_diagnosis, st.session_state.diab_input, user_query)
             st.session_state.chat_diab.append({"role": "assistant", "content": bot_reply})
             st.chat_message("assistant").write(bot_reply)
 
@@ -133,8 +135,12 @@ if selected == 'Heart Disease Prediction':
     with col3: ca = st.text_input('Major Vessels (0–3)')
     with col1: thal = st.text_input('Thal (1 = Normal, 2 = Fixed Defect, 3 = Reversible Defect)')
 
-    heart_diagnosis = ''
-    user_input_dict = {}
+    # Init session_state
+    if "heart_done" not in st.session_state:
+        st.session_state.heart_done = False
+        st.session_state.heart_diagnosis = ""
+        st.session_state.heart_input = {}
+        st.session_state.chat_heart = []
 
     if st.button('🔍 Get Heart Disease Test Result'):
         try:
@@ -144,29 +150,30 @@ if selected == 'Heart Disease Prediction':
                 float(oldpeak), int(slope), int(ca), int(thal)
             ]
             heart_prediction = heart_disease_model.predict([user_input])
-            user_input_dict = {
+            st.session_state.heart_input = {
                 "Age": age, "Sex": sex, "Chest Pain": cp,
                 "Resting BP": trestbps, "Cholesterol": chol, "Fasting Blood Sugar": fbs,
                 "Rest ECG": restecg, "Max HR": thalach, "Exercise Angina": exang,
                 "Oldpeak": oldpeak, "Slope": slope, "CA": ca, "Thal": thal
             }
             if heart_prediction[0] == 1:
-                heart_diagnosis = 'The person **has Heart Disease**'
+                st.session_state.heart_diagnosis = 'The person **has Heart Disease**'
             else:
-                heart_diagnosis = 'The person **does not have Heart Disease**'
+                st.session_state.heart_diagnosis = 'The person **does not have Heart Disease**'
         except ValueError:
-            heart_diagnosis = "⚠️ Please enter valid numeric values."
+            st.session_state.heart_diagnosis = "⚠️ Please enter valid numeric values."
 
-        st.success(heart_diagnosis)
+        st.session_state.heart_done = True
 
-        # Chatbot Section
+    if st.session_state.heart_done:
+        st.success(st.session_state.heart_diagnosis)
         st.subheader("💬 Heart Disease Assistant Chatbot")
-        if "chat_heart" not in st.session_state: st.session_state.chat_heart = []
-        for msg in st.session_state.chat_heart: st.chat_message(msg["role"]).write(msg["content"])
+        for msg in st.session_state.chat_heart:
+            st.chat_message(msg["role"]).write(msg["content"])
         if user_query := st.chat_input("Ask about your heart condition..."):
             st.session_state.chat_heart.append({"role": "user", "content": user_query})
             st.chat_message("user").write(user_query)
-            bot_reply = get_chatbot_response("Heart Disease", heart_diagnosis, user_input_dict, user_query)
+            bot_reply = get_chatbot_response("Heart Disease", st.session_state.heart_diagnosis, st.session_state.heart_input, user_query)
             st.session_state.chat_heart.append({"role": "assistant", "content": bot_reply})
             st.chat_message("assistant").write(bot_reply)
 
@@ -200,8 +207,12 @@ if selected == "Parkinson's Prediction":
     with col1: D2 = st.text_input('D2')
     with col2: PPE = st.text_input('PPE')
 
-    parkinsons_diagnosis = ''
-    user_input_dict = {}
+    # Init session_state
+    if "parkinsons_done" not in st.session_state:
+        st.session_state.parkinsons_done = False
+        st.session_state.parkinsons_diagnosis = ""
+        st.session_state.parkinsons_input = {}
+        st.session_state.chat_parkinsons = []
 
     if st.button("🔍 Get Parkinson's Test Result"):
         try:
@@ -213,7 +224,7 @@ if selected == "Parkinson's Prediction":
                 float(DFA), float(spread1), float(spread2), float(D2), float(PPE)
             ]
             parkinsons_prediction = parkinsons_model.predict([user_input])
-            user_input_dict = {
+            st.session_state.parkinsons_input = {
                 "Fo": fo, "Fhi": fhi, "Flo": flo, "Jitter %": Jitter_percent,
                 "Jitter Abs": Jitter_Abs, "RAP": RAP, "PPQ": PPQ, "DDP": DDP,
                 "Shimmer": Shimmer, "Shimmer dB": Shimmer_dB,
@@ -222,21 +233,22 @@ if selected == "Parkinson's Prediction":
                 "Spread1": spread1, "Spread2": spread2, "D2": D2, "PPE": PPE
             }
             if parkinsons_prediction[0] == 1:
-                parkinsons_diagnosis = "The person **has Parkinson's Disease**"
+                st.session_state.parkinsons_diagnosis = "The person **has Parkinson's Disease**"
             else:
-                parkinsons_diagnosis = "The person **does not have Parkinson's Disease**"
+                st.session_state.parkinsons_diagnosis = "The person **does not have Parkinson's Disease**"
         except ValueError:
-            parkinsons_diagnosis = "⚠️ Please enter valid numeric values."
+            st.session_state.parkinsons_diagnosis = "⚠️ Please enter valid numeric values."
 
-        st.success(parkinsons_diagnosis)
+        st.session_state.parkinsons_done = True
 
-        # Chatbot Section
+    if st.session_state.parkinsons_done:
+        st.success(st.session_state.parkinsons_diagnosis)
         st.subheader("💬 Parkinson's Assistant Chatbot")
-        if "chat_parkinsons" not in st.session_state: st.session_state.chat_parkinsons = []
-        for msg in st.session_state.chat_parkinsons: st.chat_message(msg["role"]).write(msg["content"])
+        for msg in st.session_state.chat_parkinsons:
+            st.chat_message(msg["role"]).write(msg["content"])
         if user_query := st.chat_input("Ask about Parkinson's condition..."):
             st.session_state.chat_parkinsons.append({"role": "user", "content": user_query})
             st.chat_message("user").write(user_query)
-            bot_reply = get_chatbot_response("Parkinson's Disease", parkinsons_diagnosis, user_input_dict, user_query)
+            bot_reply = get_chatbot_response("Parkinson's Disease", st.session_state.parkinsons_diagnosis, st.session_state.parkinsons_input, user_query)
             st.session_state.chat_parkinsons.append({"role": "assistant", "content": bot_reply})
             st.chat_message("assistant").write(bot_reply)
