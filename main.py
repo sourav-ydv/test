@@ -207,4 +207,24 @@ if selected == "Parkinson's Prediction":
                 float(DFA), float(spread1), float(spread2), float(D2), float(PPE)
             ]
             pred = parkinsons_model.predict([user_input])
-            st.session_state.parkinsons_diagnosis = "Parkinson's Disease" if pred[0] == 1 else "No
+            st.session_state.parkinsons_diagnosis = "Parkinson's Disease" if pred[0] == 1 else "No Parkinson's"
+        except:
+            st.session_state.parkinsons_diagnosis = "⚠️ Invalid input"
+
+    if st.session_state.parkinsons_diagnosis:
+        st.success(f"Diagnosis: {st.session_state.parkinsons_diagnosis}")
+
+        st.subheader("💬 Parkinson's Assistant Chatbot")
+        for msg in st.session_state.chat_parkinsons:
+            st.chat_message(msg["role"]).write(msg["content"])
+
+        if st.button("📋 Summary of Condition"):
+            summary_text = get_chatbot_response("Parkinson's Disease", st.session_state.parkinsons_diagnosis, summary=True)
+            st.info(summary_text)
+
+        if user_query := st.chat_input("Ask about Parkinson's condition..."):
+            st.session_state.chat_parkinsons.append({"role": "user", "content": user_query})
+            st.chat_message("user").write(user_query)
+            bot_reply = get_chatbot_response("Parkinson's Disease", st.session_state.parkinsons_diagnosis, user_query)
+            st.session_state.chat_parkinsons.append({"role": "assistant", "content": bot_reply})
+            st.chat_message("assistant").write(bot_reply)
