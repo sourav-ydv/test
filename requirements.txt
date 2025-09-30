@@ -3,3 +3,6 @@ streamlit
 streamlit-option-menu
 scikit-learn
 numpy
+transformers
+torch
+
