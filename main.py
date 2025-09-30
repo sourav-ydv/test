@@ -12,7 +12,6 @@ from transformers import pipeline
 # =========================
 # Hugging Face Chatbot Setup
 # =========================
-# Load free model (first run downloads ~1GB)
 @st.cache_resource
 def load_chatbot():
     return pipeline("text2text-generation", model="google/flan-t5-base")
@@ -24,7 +23,7 @@ chatbot = load_chatbot()
 # =========================
 def get_chatbot_response(disease, diagnosis, user_input, user_query):
     prompt = f"""
-    You are a medical assistant chatbot. 
+    You are a medical assistant chatbot.
     The patient is being checked for {disease}.
     
     Model Diagnosis: {diagnosis}
@@ -32,6 +31,9 @@ def get_chatbot_response(disease, diagnosis, user_input, user_query):
 
     The user is asking: {user_query}
 
+    ⚠️ IMPORTANT: Only answer questions related to {disease}.
+    If the question is unrelated, politely refuse and redirect to {disease}.
+    
     Based on the data and diagnosis, provide suggestions, precautions, 
     severity estimation if possible, and lifestyle modifications in simple language. 
     Always include a disclaimer to consult a doctor.
