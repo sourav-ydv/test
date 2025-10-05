@@ -1,6 +1,5 @@
-streamlit
-streamlit-option-menu
-openai
+fastapi
+uvicorn
+pydantic
 scikit-learn
 numpy
-pandas
