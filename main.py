@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Sep 25 17:00:19 2025
-
-@author: sksou
+Multiple Disease Prediction System with Persistent AI Chatbot
 """
 
 import pickle
@@ -10,18 +8,16 @@ import streamlit as st
 from streamlit_option_menu import option_menu
 import openai
 
-
-# ------------------ SETUP ------------------
+# ------------------ CONFIG ------------------
 st.set_page_config(page_title="Disease Prediction System", layout="wide")
 
-# Load saved models
+# Load ML models
 diabetes_model = pickle.load(open('diabetes_model.sav', 'rb'))
 heart_disease_model = pickle.load(open('heart_disease_model.sav', 'rb'))
 parkinsons_model = pickle.load(open('parkinsons_model.sav', 'rb'))
 
-# Configure OpenAI API key (store securely in Streamlit Cloud or local .streamlit/secrets.toml)
+# OpenAI API key (store securely in .streamlit/secrets.toml)
 openai.api_key = st.secrets["OPENAI_API_KEY"]
-
 
 # ------------------ SIDEBAR ------------------
 with st.sidebar:
@@ -32,13 +28,11 @@ with st.sidebar:
         default_index=0
     )
 
-
-# ------------------ DIABETES PREDICTION ------------------
+# ------------------ DIABETES ------------------
 if selected == 'Diabetes Prediction':
     st.title('🩸 Diabetes Prediction using ML')
 
     col1, col2, col3 = st.columns(3)
-
     with col1:
         Pregnancies = st.text_input('Number of Pregnancies')
     with col2:
@@ -77,33 +71,40 @@ if selected == 'Diabetes Prediction':
 
     st.success(diab_diagnosis)
 
-    # --- AI Chatbot ---
+    # ---------------- AI Chatbot ----------------
     if diab_diagnosis:
-        st.subheader("💬 AI Health Assistant")
-        user_query = st.text_input("Ask about your diabetic condition 👇")
+        st.subheader("💬 Diabetes HealthBot")
+        if "diab_chat" not in st.session_state:
+            st.session_state.diab_chat = []
+
+        user_query = st.text_input("Ask about your diabetic condition", key="diab_input")
 
         if user_query:
-            with st.spinner("HealthBot is thinking..."):
-                disease_context = f"User inputs: {user_input}. Diagnosis: {diab_diagnosis}."
-                prompt = (
-                    f"You are a helpful and safe medical advice assistant. "
-                    f"Based on {disease_context}, give helpful, non-prescriptive advice "
-                    f"for the user's question: {user_query}. "
-                    f"Focus only on diabetes-related tips, lifestyle, diet, and precautions. "
-                    f"Do not provide medical diagnosis or prescriptions."
-                )
-
+            prompt = (
+                f"User inputs: {user_input}, Diagnosis: {diab_diagnosis}. "
+                f"Answer the user's question safely, focusing on lifestyle, diet, exercise, and precautions. "
+                f"Do not give medical prescriptions. Question: {user_query}"
+            )
+            try:
                 response = openai.ChatCompletion.create(
                     model="gpt-3.5-turbo",
                     messages=[{"role": "user", "content": prompt}],
                     max_tokens=180,
                     temperature=0.7
                 )
+                answer = response['choices'][0]['message']['content']
+            except Exception:
+                answer = "⚠️ Error contacting OpenAI API."
 
-                st.write("🤖 HealthBot:", response['choices'][0]['message']['content'])
+            st.session_state.diab_chat.append({"user": user_query, "bot": answer})
+
+        # Display chat history
+        for chat in st.session_state.diab_chat:
+            st.markdown(f"**You:** {chat['user']}")
+            st.markdown(f"**HealthBot:** {chat['bot']}")
 
 
-# ------------------ HEART DISEASE PREDICTION ------------------
+# ------------------ HEART DISEASE ------------------
 if selected == 'Heart Disease Prediction':
     st.title('❤️ Heart Disease Prediction using ML')
 
@@ -156,32 +157,39 @@ if selected == 'Heart Disease Prediction':
 
     st.success(heart_diagnosis)
 
-    # --- AI Chatbot ---
+    # ---------------- AI Chatbot ----------------
     if heart_diagnosis:
-        st.subheader("💬 AI Health Assistant")
-        user_query = st.text_input("Ask about your heart health 👇")
+        st.subheader("💬 Heart HealthBot")
+        if "heart_chat" not in st.session_state:
+            st.session_state.heart_chat = []
+
+        user_query = st.text_input("Ask about your heart condition", key="heart_input")
 
         if user_query:
-            with st.spinner("HealthBot is analyzing..."):
-                disease_context = f"User inputs: {user_input}. Diagnosis: {heart_diagnosis}."
-                prompt = (
-                    f"You are a safe and informative health assistant. Based on {disease_context}, "
-                    f"provide helpful, general advice to the user about heart disease prevention, "
-                    f"lifestyle, diet, or exercise. Avoid medical diagnosis or prescribing medicines. "
-                    f"User question: {user_query}"
-                )
-
+            prompt = (
+                f"User inputs: {user_input}, Diagnosis: {heart_diagnosis}. "
+                f"Answer the user's question safely, focusing on lifestyle, diet, exercise, and precautions. "
+                f"Do not give medical prescriptions. Question: {user_query}"
+            )
+            try:
                 response = openai.ChatCompletion.create(
                     model="gpt-3.5-turbo",
                     messages=[{"role": "user", "content": prompt}],
                     max_tokens=180,
                     temperature=0.7
                 )
+                answer = response['choices'][0]['message']['content']
+            except Exception:
+                answer = "⚠️ Error contacting OpenAI API."
 
-                st.write("🤖 HealthBot:", response['choices'][0]['message']['content'])
+            st.session_state.heart_chat.append({"user": user_query, "bot": answer})
+
+        for chat in st.session_state.heart_chat:
+            st.markdown(f"**You:** {chat['user']}")
+            st.markdown(f"**HealthBot:** {chat['bot']}")
 
 
-# ------------------ PARKINSON'S PREDICTION ------------------
+# ------------------ PARKINSONS ------------------
 if selected == "Parkinsons Prediction":
     st.title("🧠 Parkinson's Disease Prediction using ML")
 
@@ -191,7 +199,6 @@ if selected == "Parkinsons Prediction":
         "Shimmer", "Shimmer_dB", "APQ3", "APQ5", "APQ", "DDA", "NHR", "HNR",
         "RPDE", "DFA", "spread1", "spread2", "D2", "PPE"
     ]
-
     inputs = []
     for i, field in enumerate(fields):
         with [col1, col2, col3, col4, col5][i % 5]:
@@ -215,26 +222,33 @@ if selected == "Parkinsons Prediction":
 
     st.success(parkinsons_diagnosis)
 
-    # --- AI Chatbot ---
+    # ---------------- AI Chatbot ----------------
     if parkinsons_diagnosis:
-        st.subheader("💬 AI Health Assistant")
-        user_query = st.text_input("Ask about Parkinson’s disease 👇")
+        st.subheader("💬 Parkinson's HealthBot")
+        if "parkinsons_chat" not in st.session_state:
+            st.session_state.parkinsons_chat = []
+
+        user_query = st.text_input("Ask about Parkinson’s disease", key="parkinsons_input")
 
         if user_query:
-            with st.spinner("HealthBot is generating advice..."):
-                disease_context = f"User inputs: {user_input}. Diagnosis: {parkinsons_diagnosis}."
-                prompt = (
-                    f"You are a helpful assistant. Based on {disease_context}, provide helpful and "
-                    f"safe suggestions related to Parkinson’s disease — focusing on exercise, therapy, "
-                    f"and lifestyle management. Avoid diagnosis or medication suggestions. "
-                    f"User question: {user_query}"
-                )
-
+            prompt = (
+                f"User inputs: {user_input}, Diagnosis: {parkinsons_diagnosis}. "
+                f"Answer the user's question safely, focusing on lifestyle, exercise, therapy, and precautions. "
+                f"Do not give medical prescriptions. Question: {user_query}"
+            )
+            try:
                 response = openai.ChatCompletion.create(
                     model="gpt-3.5-turbo",
                     messages=[{"role": "user", "content": prompt}],
                     max_tokens=180,
                     temperature=0.7
                 )
+                answer = response['choices'][0]['message']['content']
+            except Exception:
+                answer = "⚠️ Error contacting OpenAI API."
 
-                st.write("🤖 HealthBot:", response['choices'][0]['message']['content'])
+            st.session_state.parkinsons_chat.append({"user": user_query, "bot": answer})
+
+        for chat in st.session_state.parkinsons_chat:
+            st.markdown(f"**You:** {chat['user']}")
+            st.markdown(f"**HealthBot:** {chat['bot']}")
