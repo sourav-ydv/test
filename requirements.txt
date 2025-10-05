@@ -2,7 +2,6 @@ streamlit
 streamlit-option-menu
 transformers
 torch
+pickle5
 scikit-learn
 numpy
-
-
