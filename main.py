@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Disease Prediction + Smart Medical Chatbot
+Disease Prediction + Smart Medical Chatbot (Hugging Face version)
 """
 
 import pickle
@@ -16,9 +16,12 @@ heart_disease_model = pickle.load(open('heart_disease_model.sav', 'rb'))
 parkinsons_model = pickle.load(open('parkinsons_model.sav', 'rb'))
 
 # =========================
-# Chatbot Setup (Hugging Face)
+# Hugging Face Chatbot Setup (Text Generation)
 # =========================
-chatbot_pipeline = pipeline("conversational", model="facebook/blenderbot-400M-distill")
+chatbot_pipeline = pipeline(
+    "text-generation",
+    model="facebook/blenderbot-400M-distill"
+)
 
 # =========================
 # Sidebar Menu
@@ -42,33 +45,30 @@ def get_prediction(model, input_data):
         return "Error"
 
 def chatbot_response(disease, user_input):
-    if disease not in ["Diabetes", "Heart Disease", "Parkinson's"]:
-        return "Error: Invalid disease context."
-
-    unrelated = ["president", "country", "movie", "game", "politics", "AI", "chatbot"]
+    unrelated = ["president", "game", "movie", "AI", "chatbot", "politics", "sports"]
     if any(word in user_input.lower() for word in unrelated):
-        return "❌ Sorry, I can only answer questions related to your medical condition."
+        return "❌ I can only discuss medical information related to your disease."
 
     prompt = (
-        f"You are a medical assistant chatbot. The user has {disease}. "
-        f"Question: {user_input}. "
-        f"Give clear, factual, health-related advice with symptoms, treatment options, and lifestyle tips. "
-        f"Always include a disclaimer to consult a doctor."
+        f"You are a medical assistant chatbot helping a patient diagnosed with {disease}. "
+        f"The user asked: '{user_input}'. "
+        f"Provide accurate, health-related guidance — symptoms, precautions, lifestyle, and treatment advice. "
+        f"Always add: 'Consult your doctor for personalized care.'"
     )
 
     try:
-        response = chatbot_pipeline(prompt)[0]['generated_text']
-        return response
-    except Exception:
-        return "⚠️ Sorry, I couldn’t process your question. Please try again."
+        response = chatbot_pipeline(prompt, max_new_tokens=150, num_return_sequences=1)[0]["generated_text"]
+        return response.strip()
+    except Exception as e:
+        return f"⚠️ Error generating answer: {e}"
 
 def summarize_condition(disease):
-    prompt = f"Summarize the condition {disease} in simple language with symptoms, precautions, lifestyle changes, and doctor advice."
+    prompt = f"Summarize the medical condition '{disease}' with symptoms, prevention, and lifestyle advice in simple words."
     try:
-        response = chatbot_pipeline(prompt)[0]['generated_text']
-        return response
-    except Exception:
-        return f"{disease} is a medical condition. Please consult your doctor for more details."
+        response = chatbot_pipeline(prompt, max_new_tokens=120, num_return_sequences=1)[0]["generated_text"]
+        return response.strip()
+    except:
+        return f"{disease} is a health condition. Please consult your doctor for more information."
 
 # =========================
 # Diabetes Prediction Page
@@ -102,7 +102,7 @@ if selected == 'Diabetes':
 
         st.success(f'The person is {diagnosis}')
 
-        # Chatbot after prediction
+        # Chatbot
         st.subheader("💬 Diabetes Assistant Chatbot")
         if st.button("📄 Summary of Condition"):
             st.info(summarize_condition("Diabetes"))
@@ -164,40 +164,19 @@ if selected == 'Heart Disease':
 if selected == "Parkinsons":
     st.title("🧠 Parkinson's Disease Prediction using ML")
 
-    col1, col2, col3 = st.columns(3)
-    with col1: fo = st.text_input('MDVP:Fo(Hz)')
-    with col2: fhi = st.text_input('MDVP:Fhi(Hz)')
-    with col3: flo = st.text_input('MDVP:Flo(Hz)')
-    with col1: Jitter_percent = st.text_input('MDVP:Jitter(%)')
-    with col2: Jitter_Abs = st.text_input('MDVP:Jitter(Abs)')
-    with col3: RAP = st.text_input('MDVP:RAP')
-    with col1: PPQ = st.text_input('MDVP:PPQ')
-    with col2: DDP = st.text_input('Jitter:DDP')
-    with col3: Shimmer = st.text_input('MDVP:Shimmer')
-    with col1: Shimmer_dB = st.text_input('MDVP:Shimmer(dB)')
-    with col2: APQ3 = st.text_input('Shimmer:APQ3')
-    with col3: APQ5 = st.text_input('Shimmer:APQ5')
-    with col1: APQ = st.text_input('MDVP:APQ')
-    with col2: DDA = st.text_input('Shimmer:DDA')
-    with col3: NHR = st.text_input('NHR')
-    with col1: HNR = st.text_input('HNR')
-    with col2: RPDE = st.text_input('RPDE')
-    with col3: DFA = st.text_input('DFA')
-    with col1: spread1 = st.text_input('spread1')
-    with col2: spread2 = st.text_input('spread2')
-    with col3: D2 = st.text_input('D2')
-    with col1: PPE = st.text_input('PPE')
+    features = [
+        'MDVP:Fo(Hz)', 'MDVP:Fhi(Hz)', 'MDVP:Flo(Hz)', 'MDVP:Jitter(%)', 'MDVP:Jitter(Abs)',
+        'MDVP:RAP', 'MDVP:PPQ', 'Jitter:DDP', 'MDVP:Shimmer', 'MDVP:Shimmer(dB)',
+        'Shimmer:APQ3', 'Shimmer:APQ5', 'MDVP:APQ', 'Shimmer:DDA', 'NHR', 'HNR',
+        'RPDE', 'DFA', 'spread1', 'spread2', 'D2', 'PPE'
+    ]
 
+    inputs = [st.text_input(name) for name in features]
     parkinsons_diagnosis = ''
 
     if st.button("🔍 Predict Parkinson's Result"):
         try:
-            user_input = [
-                float(fo), float(fhi), float(flo), float(Jitter_percent), float(Jitter_Abs),
-                float(RAP), float(PPQ), float(DDP), float(Shimmer), float(Shimmer_dB),
-                float(APQ3), float(APQ5), float(APQ), float(DDA), float(NHR), float(HNR),
-                float(RPDE), float(DFA), float(spread1), float(spread2), float(D2), float(PPE)
-            ]
+            user_input = [float(i) for i in inputs]
             result = get_prediction(parkinsons_model, user_input)
             parkinsons_diagnosis = "Parkinson's Detected" if result == 1 else "No Parkinson's"
         except:
