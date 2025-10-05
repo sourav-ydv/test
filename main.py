@@ -16,7 +16,7 @@ diabetes_model = pickle.load(open('diabetes_model.sav', 'rb'))
 heart_disease_model = pickle.load(open('heart_disease_model.sav', 'rb'))
 parkinsons_model = pickle.load(open('parkinsons_model.sav', 'rb'))
 
-# OpenAI API key
+# OpenAI API key (store securely in .streamlit/secrets.toml)
 openai.api_key = st.secrets["OPENAI_API_KEY"]
 
 # ------------------ SIDEBAR ------------------
@@ -29,11 +29,11 @@ with st.sidebar:
     )
 
 # ------------------ HELPER FUNCTION ------------------
-def ask_healthbot(user_input, diagnosis, user_query, chat_list, focus_topics):
+def ask_healthbot(user_input, diagnosis, question, chat_list, focus):
     prompt = (
         f"User inputs: {user_input}, Diagnosis: {diagnosis}. "
-        f"Answer the user's question safely, focusing on {focus_topics}. "
-        f"Do not give medical prescriptions. Question: {user_query}"
+        f"Answer the user's question safely, focusing on {focus}. "
+        f"Do not give medical prescriptions. Question: {question}"
     )
     try:
         response = openai.ChatCompletion.create(
@@ -45,9 +45,7 @@ def ask_healthbot(user_input, diagnosis, user_query, chat_list, focus_topics):
         answer = response['choices'][0]['message']['content']
     except Exception:
         answer = "⚠️ Error contacting OpenAI API."
-
-    chat_list.append({"user": user_query, "bot": answer})
-
+    chat_list.append({"user": question, "bot": answer})
 
 # ------------------ DIABETES ------------------
 if selected == 'Diabetes Prediction':
@@ -82,7 +80,11 @@ if selected == 'Diabetes Prediction':
                 float(DiabetesPedigreeFunction), int(Age)
             ]
             diab_prediction = diabetes_model.predict([user_input_d])
-            diab_diagnosis = 'The person is diabetic' if diab_prediction[0] == 1 else 'The person is not diabetic'
+
+            if diab_prediction[0] == 1:
+                diab_diagnosis = 'The person is diabetic'
+            else:
+                diab_diagnosis = 'The person is not diabetic'
         except ValueError:
             diab_diagnosis = "Please enter valid numeric values."
 
@@ -93,35 +95,46 @@ if selected == 'Diabetes Prediction':
     if "diab_chat" not in st.session_state:
         st.session_state.diab_chat = []
 
-    with st.form("diab_chat_form", clear_on_submit=True):
-        user_query = st.text_input("Ask about your diabetic condition")
-        submitted = st.form_submit_button("Send")
-        if submitted and user_query and diab_diagnosis:
-            ask_healthbot(user_input_d, diab_diagnosis, user_query, st.session_state.diab_chat, "lifestyle, diet, exercise, and precautions")
+    user_query = st.text_input("Ask about your diabetic condition", key="diab_input")
+    if st.button("Send Query") and user_query and diab_diagnosis:
+        ask_healthbot(user_input_d, diab_diagnosis, user_query, st.session_state.diab_chat, "lifestyle, diet, exercise, and precautions")
+        st.session_state.diab_input = ""  # clear input
 
     for chat in st.session_state.diab_chat:
         st.markdown(f"**You:** {chat['user']}")
         st.markdown(f"**HealthBot:** {chat['bot']}")
-
 
 # ------------------ HEART DISEASE ------------------
 if selected == 'Heart Disease Prediction':
     st.title('❤️ Heart Disease Prediction using ML')
 
     col1, col2, col3 = st.columns(3)
-    with col1: age = st.text_input('Age')
-    with col2: sex = st.text_input('Sex')
-    with col3: cp = st.text_input('Chest Pain types')
-    with col1: trestbps = st.text_input('Resting Blood Pressure')
-    with col2: chol = st.text_input('Serum Cholestoral in mg/dl')
-    with col3: fbs = st.text_input('Fasting Blood Sugar > 120 mg/dl')
-    with col1: restecg = st.text_input('Resting Electrocardiographic results')
-    with col2: thalach = st.text_input('Maximum Heart Rate achieved')
-    with col3: exang = st.text_input('Exercise Induced Angina')
-    with col1: oldpeak = st.text_input('ST depression induced by exercise')
-    with col2: slope = st.text_input('Slope of the peak exercise ST segment')
-    with col3: ca = st.text_input('Major vessels colored by flourosopy')
-    with col1: thal = st.text_input('thal: 0 = normal; 1 = fixed defect; 2 = reversable defect')
+    with col1:
+        age = st.text_input('Age')
+    with col2:
+        sex = st.text_input('Sex')
+    with col3:
+        cp = st.text_input('Chest Pain types')
+    with col1:
+        trestbps = st.text_input('Resting Blood Pressure')
+    with col2:
+        chol = st.text_input('Serum Cholestoral in mg/dl')
+    with col3:
+        fbs = st.text_input('Fasting Blood Sugar > 120 mg/dl')
+    with col1:
+        restecg = st.text_input('Resting Electrocardiographic results')
+    with col2:
+        thalach = st.text_input('Maximum Heart Rate achieved')
+    with col3:
+        exang = st.text_input('Exercise Induced Angina')
+    with col1:
+        oldpeak = st.text_input('ST depression induced by exercise')
+    with col2:
+        slope = st.text_input('Slope of the peak exercise ST segment')
+    with col3:
+        ca = st.text_input('Major vessels colored by flourosopy')
+    with col1:
+        thal = st.text_input('thal: 0 = normal; 1 = fixed defect; 2 = reversable defect')
 
     heart_diagnosis = ''
     user_input_h = []
@@ -134,7 +147,11 @@ if selected == 'Heart Disease Prediction':
                 float(oldpeak), int(slope), int(ca), int(thal)
             ]
             heart_prediction = heart_disease_model.predict([user_input_h])
-            heart_diagnosis = 'The person has heart disease' if heart_prediction[0] == 1 else 'The person does not have heart disease'
+
+            if heart_prediction[0] == 1:
+                heart_diagnosis = 'The person is having heart disease'
+            else:
+                heart_diagnosis = 'The person does not have any heart disease'
         except ValueError:
             heart_diagnosis = "Please enter valid numeric values."
 
@@ -145,16 +162,14 @@ if selected == 'Heart Disease Prediction':
     if "heart_chat" not in st.session_state:
         st.session_state.heart_chat = []
 
-    with st.form("heart_chat_form", clear_on_submit=True):
-        user_query = st.text_input("Ask about your heart condition")
-        submitted = st.form_submit_button("Send")
-        if submitted and user_query and heart_diagnosis:
-            ask_healthbot(user_input_h, heart_diagnosis, user_query, st.session_state.heart_chat, "lifestyle, diet, exercise, and precautions")
+    user_query = st.text_input("Ask about your heart condition", key="heart_input")
+    if st.button("Send Query") and user_query and heart_diagnosis:
+        ask_healthbot(user_input_h, heart_diagnosis, user_query, st.session_state.heart_chat, "lifestyle, diet, exercise, and precautions")
+        st.session_state.heart_input = ""
 
     for chat in st.session_state.heart_chat:
         st.markdown(f"**You:** {chat['user']}")
         st.markdown(f"**HealthBot:** {chat['bot']}")
-
 
 # ------------------ PARKINSONS ------------------
 if selected == "Parkinsons Prediction":
@@ -179,7 +194,11 @@ if selected == "Parkinsons Prediction":
         try:
             user_input_p = [float(x) for x in inputs]
             parkinsons_prediction = parkinsons_model.predict([user_input_p])
-            parkinsons_diagnosis = "The person has Parkinson's disease" if parkinsons_prediction[0] == 1 else "The person does not have Parkinson's disease"
+
+            if parkinsons_prediction[0] == 1:
+                parkinsons_diagnosis = "The person has Parkinson's disease"
+            else:
+                parkinsons_diagnosis = "The person does not have Parkinson's disease"
         except ValueError:
             parkinsons_diagnosis = "⚠️ Please enter valid numeric values."
 
@@ -190,11 +209,10 @@ if selected == "Parkinsons Prediction":
     if "parkinsons_chat" not in st.session_state:
         st.session_state.parkinsons_chat = []
 
-    with st.form("parkinsons_chat_form", clear_on_submit=True):
-        user_query = st.text_input("Ask about Parkinson’s disease")
-        submitted = st.form_submit_button("Send")
-        if submitted and user_query and parkinsons_diagnosis:
-            ask_healthbot(user_input_p, parkinsons_diagnosis, user_query, st.session_state.parkinsons_chat, "lifestyle, exercise, therapy, and precautions")
+    user_query = st.text_input("Ask about Parkinson’s disease", key="parkinsons_input")
+    if st.button("Send Query") and user_query and parkinsons_diagnosis:
+        ask_healthbot(user_input_p, parkinsons_diagnosis, user_query, st.session_state.parkinsons_chat, "lifestyle, exercise, therapy, and precautions")
+        st.session_state.parkinsons_input = ""
 
     for chat in st.session_state.parkinsons_chat:
         st.markdown(f"**You:** {chat['user']}")
