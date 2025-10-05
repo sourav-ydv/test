@@ -1,12 +1,6 @@
-fastapi
-uvicorn
-pydantic
-streamlit
-streamlit-option-menu
-openai
+streamlit==1.26.1
+streamlit-option-menu==0.5.3
+openai==1.27.7
+numpy==1.26.4
+pandas==2.1.1
 scikit-learn==1.4.2
-numpy
-pandas
-
-
-
