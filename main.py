@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Multiple Disease Prediction System with Persistent AI Chatbot
+Multiple Disease Prediction System with Persistent AI Chatbot (Enhanced UI)
 """
 
 import pickle
@@ -11,7 +11,7 @@ import openai
 # ------------------ CONFIG ------------------
 st.set_page_config(page_title="Disease Prediction System", layout="wide")
 
-# Load ML models
+# ------------------ LOAD MODELS ------------------
 diabetes_model = pickle.load(open('diabetes_model.sav', 'rb'))
 heart_disease_model = pickle.load(open('heart_disease_model.sav', 'rb'))
 parkinsons_model = pickle.load(open('parkinsons_model.sav', 'rb'))
@@ -27,6 +27,38 @@ with st.sidebar:
         icons=['activity', 'heart', 'person'],
         default_index=0
     )
+
+# ------------------ CSS FOR CHATBUBBLES ------------------
+st.markdown("""
+<style>
+.chat-container {
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    background-color: #f9f9f9;
+}
+.user-msg {
+    background-color: #DCF8C6;
+    padding: 8px 12px;
+    border-radius: 15px;
+    margin: 5px 0;
+    text-align: right;
+    max-width: 70%;
+    margin-left: auto;
+}
+.bot-msg {
+    background-color: #E8E8E8;
+    padding: 8px 12px;
+    border-radius: 15px;
+    margin: 5px 0;
+    text-align: left;
+    max-width: 70%;
+    margin-right: auto;
+}
+</style>
+""", unsafe_allow_html=True)
 
 # ------------------ DIABETES ------------------
 if selected == 'Diabetes Prediction':
@@ -61,47 +93,48 @@ if selected == 'Diabetes Prediction':
                 float(DiabetesPedigreeFunction), int(Age)
             ]
             diab_prediction = diabetes_model.predict([user_input])
-
-            if diab_prediction[0] == 1:
-                diab_diagnosis = 'The person is diabetic'
-            else:
-                diab_diagnosis = 'The person is not diabetic'
+            diab_diagnosis = 'The person is diabetic' if diab_prediction[0] == 1 else 'The person is not diabetic'
         except ValueError:
             diab_diagnosis = "Please enter valid numeric values."
 
     st.success(diab_diagnosis)
 
-    # ---------------- AI Chatbot ----------------
+    # ------------------ AI CHATBOT ------------------
     if diab_diagnosis:
         st.subheader("💬 Diabetes HealthBot")
         if "diab_chat" not in st.session_state:
             st.session_state.diab_chat = []
 
-        user_query = st.text_input("Ask about your diabetic condition", key="diab_input")
-
-        if user_query:
-            prompt = (
-                f"User inputs: {user_input}, Diagnosis: {diab_diagnosis}. "
-                f"Answer the user's question safely, focusing on lifestyle, diet, exercise, and precautions. "
-                f"Do not give medical prescriptions. Question: {user_query}"
-            )
-            try:
-                response = openai.ChatCompletion.create(
-                    model="gpt-3.5-turbo",
-                    messages=[{"role": "user", "content": prompt}],
-                    max_tokens=180,
-                    temperature=0.7
-                )
-                answer = response['choices'][0]['message']['content']
-            except Exception:
-                answer = "⚠️ Error contacting OpenAI API."
-
-            st.session_state.diab_chat.append({"user": user_query, "bot": answer})
-
-        # Display chat history
+        # Chat container
+        st.markdown('<div class="chat-container">', unsafe_allow_html=True)
         for chat in st.session_state.diab_chat:
-            st.markdown(f"**You:** {chat['user']}")
-            st.markdown(f"**HealthBot:** {chat['bot']}")
+            st.markdown(f'<div class="user-msg">{chat["user"]}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="bot-msg">{chat["bot"]}</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        # Input form
+        with st.form("diab_chat_form", clear_on_submit=True):
+            user_query = st.text_input("Type your question here...")
+            submitted = st.form_submit_button("Send")
+            if submitted and user_query:
+                prompt = (
+                    f"User inputs: {user_input}, Diagnosis: {diab_diagnosis}. "
+                    f"Answer safely about lifestyle, diet, exercise, and precautions. "
+                    f"Do not give prescriptions. Question: {user_query}"
+                )
+                try:
+                    response = openai.ChatCompletion.create(
+                        model="gpt-3.5-turbo",
+                        messages=[{"role": "user", "content": prompt}],
+                        max_tokens=180,
+                        temperature=0.7
+                    )
+                    answer = response['choices'][0]['message']['content']
+                except Exception:
+                    answer = "⚠️ Error contacting OpenAI API."
+
+                st.session_state.diab_chat.append({"user": user_query, "bot": answer})
+                st.experimental_rerun()
 
 
 # ------------------ HEART DISEASE ------------------
@@ -109,32 +142,19 @@ if selected == 'Heart Disease Prediction':
     st.title('❤️ Heart Disease Prediction using ML')
 
     col1, col2, col3 = st.columns(3)
-    with col1:
-        age = st.text_input('Age')
-    with col2:
-        sex = st.text_input('Sex')
-    with col3:
-        cp = st.text_input('Chest Pain types')
-    with col1:
-        trestbps = st.text_input('Resting Blood Pressure')
-    with col2:
-        chol = st.text_input('Serum Cholestoral in mg/dl')
-    with col3:
-        fbs = st.text_input('Fasting Blood Sugar > 120 mg/dl')
-    with col1:
-        restecg = st.text_input('Resting Electrocardiographic results')
-    with col2:
-        thalach = st.text_input('Maximum Heart Rate achieved')
-    with col3:
-        exang = st.text_input('Exercise Induced Angina')
-    with col1:
-        oldpeak = st.text_input('ST depression induced by exercise')
-    with col2:
-        slope = st.text_input('Slope of the peak exercise ST segment')
-    with col3:
-        ca = st.text_input('Major vessels colored by flourosopy')
-    with col1:
-        thal = st.text_input('thal: 0 = normal; 1 = fixed defect; 2 = reversable defect')
+    with col1: age = st.text_input('Age')
+    with col2: sex = st.text_input('Sex')
+    with col3: cp = st.text_input('Chest Pain types')
+    with col1: trestbps = st.text_input('Resting Blood Pressure')
+    with col2: chol = st.text_input('Serum Cholestoral in mg/dl')
+    with col3: fbs = st.text_input('Fasting Blood Sugar > 120 mg/dl')
+    with col1: restecg = st.text_input('Resting Electrocardiographic results')
+    with col2: thalach = st.text_input('Maximum Heart Rate achieved')
+    with col3: exang = st.text_input('Exercise Induced Angina')
+    with col1: oldpeak = st.text_input('ST depression induced by exercise')
+    with col2: slope = st.text_input('Slope of the peak exercise ST segment')
+    with col3: ca = st.text_input('Major vessels colored by flourosopy')
+    with col1: thal = st.text_input('thal: 0=normal;1=fixed defect;2=reversable defect')
 
     heart_diagnosis = ''
     user_input = []
@@ -147,46 +167,45 @@ if selected == 'Heart Disease Prediction':
                 float(oldpeak), int(slope), int(ca), int(thal)
             ]
             heart_prediction = heart_disease_model.predict([user_input])
-
-            if heart_prediction[0] == 1:
-                heart_diagnosis = 'The person is having heart disease'
-            else:
-                heart_diagnosis = 'The person does not have any heart disease'
+            heart_diagnosis = 'The person has heart disease' if heart_prediction[0] == 1 else 'No heart disease detected'
         except ValueError:
             heart_diagnosis = "Please enter valid numeric values."
 
     st.success(heart_diagnosis)
 
-    # ---------------- AI Chatbot ----------------
     if heart_diagnosis:
         st.subheader("💬 Heart HealthBot")
         if "heart_chat" not in st.session_state:
             st.session_state.heart_chat = []
 
-        user_query = st.text_input("Ask about your heart condition", key="heart_input")
-
-        if user_query:
-            prompt = (
-                f"User inputs: {user_input}, Diagnosis: {heart_diagnosis}. "
-                f"Answer the user's question safely, focusing on lifestyle, diet, exercise, and precautions. "
-                f"Do not give medical prescriptions. Question: {user_query}"
-            )
-            try:
-                response = openai.ChatCompletion.create(
-                    model="gpt-3.5-turbo",
-                    messages=[{"role": "user", "content": prompt}],
-                    max_tokens=180,
-                    temperature=0.7
-                )
-                answer = response['choices'][0]['message']['content']
-            except Exception:
-                answer = "⚠️ Error contacting OpenAI API."
-
-            st.session_state.heart_chat.append({"user": user_query, "bot": answer})
-
+        st.markdown('<div class="chat-container">', unsafe_allow_html=True)
         for chat in st.session_state.heart_chat:
-            st.markdown(f"**You:** {chat['user']}")
-            st.markdown(f"**HealthBot:** {chat['bot']}")
+            st.markdown(f'<div class="user-msg">{chat["user"]}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="bot-msg">{chat["bot"]}</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        with st.form("heart_chat_form", clear_on_submit=True):
+            user_query = st.text_input("Type your question here...")
+            submitted = st.form_submit_button("Send")
+            if submitted and user_query:
+                prompt = (
+                    f"User inputs: {user_input}, Diagnosis: {heart_diagnosis}. "
+                    f"Answer safely about lifestyle, diet, exercise, and precautions. "
+                    f"Do not give prescriptions. Question: {user_query}"
+                )
+                try:
+                    response = openai.ChatCompletion.create(
+                        model="gpt-3.5-turbo",
+                        messages=[{"role": "user", "content": prompt}],
+                        max_tokens=180,
+                        temperature=0.7
+                    )
+                    answer = response['choices'][0]['message']['content']
+                except Exception:
+                    answer = "⚠️ Error contacting OpenAI API."
+
+                st.session_state.heart_chat.append({"user": user_query, "bot": answer})
+                st.experimental_rerun()
 
 
 # ------------------ PARKINSONS ------------------
@@ -195,13 +214,13 @@ if selected == "Parkinsons Prediction":
 
     col1, col2, col3, col4, col5 = st.columns(5)
     fields = [
-        "fo", "fhi", "flo", "Jitter_percent", "Jitter_Abs", "RAP", "PPQ", "DDP",
-        "Shimmer", "Shimmer_dB", "APQ3", "APQ5", "APQ", "DDA", "NHR", "HNR",
-        "RPDE", "DFA", "spread1", "spread2", "D2", "PPE"
+        "fo","fhi","flo","Jitter_percent","Jitter_Abs","RAP","PPQ","DDP",
+        "Shimmer","Shimmer_dB","APQ3","APQ5","APQ","DDA","NHR","HNR",
+        "RPDE","DFA","spread1","spread2","D2","PPE"
     ]
     inputs = []
     for i, field in enumerate(fields):
-        with [col1, col2, col3, col4, col5][i % 5]:
+        with [col1,col2,col3,col4,col5][i%5]:
             val = st.text_input(field)
             inputs.append(val)
 
@@ -212,43 +231,42 @@ if selected == "Parkinsons Prediction":
         try:
             user_input = [float(x) for x in inputs]
             parkinsons_prediction = parkinsons_model.predict([user_input])
-
-            if parkinsons_prediction[0] == 1:
-                parkinsons_diagnosis = "The person has Parkinson's disease"
-            else:
-                parkinsons_diagnosis = "The person does not have Parkinson's disease"
+            parkinsons_diagnosis = "Has Parkinson's disease" if parkinsons_prediction[0] == 1 else "No Parkinson's disease"
         except ValueError:
             parkinsons_diagnosis = "⚠️ Please enter valid numeric values."
 
     st.success(parkinsons_diagnosis)
 
-    # ---------------- AI Chatbot ----------------
     if parkinsons_diagnosis:
         st.subheader("💬 Parkinson's HealthBot")
         if "parkinsons_chat" not in st.session_state:
             st.session_state.parkinsons_chat = []
 
-        user_query = st.text_input("Ask about Parkinson’s disease", key="parkinsons_input")
-
-        if user_query:
-            prompt = (
-                f"User inputs: {user_input}, Diagnosis: {parkinsons_diagnosis}. "
-                f"Answer the user's question safely, focusing on lifestyle, exercise, therapy, and precautions. "
-                f"Do not give medical prescriptions. Question: {user_query}"
-            )
-            try:
-                response = openai.ChatCompletion.create(
-                    model="gpt-3.5-turbo",
-                    messages=[{"role": "user", "content": prompt}],
-                    max_tokens=180,
-                    temperature=0.7
-                )
-                answer = response['choices'][0]['message']['content']
-            except Exception:
-                answer = "⚠️ Error contacting OpenAI API."
-
-            st.session_state.parkinsons_chat.append({"user": user_query, "bot": answer})
-
+        st.markdown('<div class="chat-container">', unsafe_allow_html=True)
         for chat in st.session_state.parkinsons_chat:
-            st.markdown(f"**You:** {chat['user']}")
-            st.markdown(f"**HealthBot:** {chat['bot']}")
+            st.markdown(f'<div class="user-msg">{chat["user"]}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="bot-msg">{chat["bot"]}</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        with st.form("parkinsons_chat_form", clear_on_submit=True):
+            user_query = st.text_input("Type your question here...")
+            submitted = st.form_submit_button("Send")
+            if submitted and user_query:
+                prompt = (
+                    f"User inputs: {user_input}, Diagnosis: {parkinsons_diagnosis}. "
+                    f"Answer safely about lifestyle, exercise, therapy, and precautions. "
+                    f"Do not give prescriptions. Question: {user_query}"
+                )
+                try:
+                    response = openai.ChatCompletion.create(
+                        model="gpt-3.5-turbo",
+                        messages=[{"role": "user", "content": prompt}],
+                        max_tokens=180,
+                        temperature=0.7
+                    )
+                    answer = response['choices'][0]['message']['content']
+                except Exception:
+                    answer = "⚠️ Error contacting OpenAI API."
+
+                st.session_state.parkinsons_chat.append({"user": user_query, "bot": answer})
+                st.experimental_rerun()
