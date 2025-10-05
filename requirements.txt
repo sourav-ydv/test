@@ -1,8 +1,9 @@
 streamlit
 streamlit-option-menu
-transformers==4.44.2
+transformers
 torch
-pickle5
+pickle
 scikit-learn
 numpy
+
 
