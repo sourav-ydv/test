@@ -4,7 +4,9 @@ pydantic
 streamlit
 streamlit-option-menu
 openai
-scikit-learn
+scikit-learn==1.4.2
 numpy
 pandas
+
+
 
