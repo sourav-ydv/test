@@ -1,9 +1,6 @@
 streamlit
 streamlit-option-menu
-transformers
-torch
-pickle
+openai
 scikit-learn
 numpy
-
-
+pickle5
