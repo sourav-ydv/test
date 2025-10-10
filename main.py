@@ -22,8 +22,8 @@ parkinsons_model = pickle.load(open('parkinsons_model.sav', 'rb'))
 with st.sidebar:
     selected = option_menu(
         'Multi-Disease Prediction System',
-        ['🏠 Home', '💉 Diabetes Prediction', '❤️ Heart Disease Prediction', '🧠 Parkinson’s Prediction', '🤖 HealthBot Assistant'],
-        icons=['house', 'activity', 'heart', 'brain', 'robot'],
+        ['💉 Diabetes Prediction', '❤️ Heart Disease Prediction', '🧠 Parkinson’s Prediction', '🤖 HealthBot Assistant'],
+        icons=['activity', 'heart', 'brain', 'robot'],
         default_index=0
     )
 
@@ -152,6 +152,7 @@ if selected == '🤖 HealthBot Assistant':
 # ---------------------------------------------------------
 st.markdown("---")
 st.caption("⚕️ Powered by OpenAI GPT & ML Models — Not a replacement for professional medical advice.")
+
 
 
 
