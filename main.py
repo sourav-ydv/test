@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Multi-Disease Prediction System + Smart HealthBot
-✅ OpenAI (primary) + Gemini fallback (free)
+OpenAI (primary) + Gemini fallback
 """
 
 import pickle
@@ -11,19 +11,19 @@ from openai import OpenAI
 import google.generativeai as genai
 
 # ---------------------------------------------------------
-# 1️⃣ Load Models
+# 1️⃣ Load ML Models
 # ---------------------------------------------------------
 diabetes_model = pickle.load(open('diabetes_model.sav', 'rb'))
 heart_model = pickle.load(open('heart_disease_model.sav', 'rb'))
 parkinsons_model = pickle.load(open('parkinsons_model.sav', 'rb'))
 
 # ---------------------------------------------------------
-# 2️⃣ Page Config
+# 2️⃣ Streamlit Page Config
 # ---------------------------------------------------------
 st.set_page_config(page_title="Multi-Disease Prediction System", layout="wide")
 
 # ---------------------------------------------------------
-# 3️⃣ Sidebar
+# 3️⃣ Sidebar Menu
 # ---------------------------------------------------------
 with st.sidebar:
     selected = option_menu(
@@ -35,7 +35,7 @@ with st.sidebar:
     )
 
 # ---------------------------------------------------------
-# 4️⃣ Home
+# 4️⃣ Home Page
 # ---------------------------------------------------------
 if selected == '🏠 Home':
     st.title("🏥 Multi-Disease Prediction & Health Assistant")
@@ -43,8 +43,8 @@ if selected == '🏠 Home':
     Welcome to the **AI-Powered Health Prediction System**!  
     This app can:
     - Predict your risk for **Diabetes**, **Heart Disease**, and **Parkinson’s Disease**  
-    - Chat with a built-in **Health Assistant** that provides general lifestyle and wellness advice  
-      
+    - Chat with a built-in **Health Assistant** for general lifestyle and wellness guidance  
+
     ⚠️ *Disclaimer:* This app is for educational and informational purposes only — not medical advice.
     """)
 
@@ -122,34 +122,35 @@ if selected == '🧠 Parkinson’s Prediction':
             st.success('✅ The person is healthy.')
 
 # ---------------------------------------------------------
-# 8️⃣ HealthBot Assistant (OpenAI + Gemini fallback)
+# 8️⃣ HealthBot Assistant (OpenAI + Gemini Fallback)
 # ---------------------------------------------------------
 if selected == '🤖 HealthBot Assistant':
     st.title("🤖 AI HealthBot Assistant")
 
-    # Try OpenAI first
-    client = None
+    # Initialize OpenAI
     use_openai = False
-
+    client = None
     try:
         client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
         use_openai = True
     except Exception:
-        st.warning("⚠️ OpenAI key missing or invalid. Using Gemini instead.")
-        use_openai = False
+        st.warning("⚠️ OpenAI key missing or invalid. Will use Gemini fallback.")
 
-    # Gemini fallback config
-    if "GEMINI_API_KEY" in st.secrets:
+    # Configure Gemini
+    try:
         genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-    elif not use_openai:
-        st.error("⚠️ No OpenAI or Gemini API key available. Add at least one in Streamlit secrets.")
-        st.stop()
+        use_gemini = True
+    except Exception:
+        use_gemini = False
+        if not use_openai:
+            st.error("⚠️ No OpenAI or Gemini API key found. Cannot generate replies.")
+            st.stop()
 
-    # Chat memory
+    # Memory for chat
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
 
-    user_input = st.text_area("💬 Ask about health, diet, or exercise:", placeholder="e.g., What foods help manage blood sugar?")
+    user_input = st.text_area("💬 Ask about health, diet, or exercise:")
 
     if st.button("Send"):
         if user_input.strip() == "":
@@ -165,31 +166,39 @@ if selected == '🤖 HealthBot Assistant':
                 "If something sounds serious, advise seeing a doctor."
             )
 
-            try:
-                if use_openai:
+            reply = ""
+            # Try OpenAI first
+            if use_openai:
+                try:
                     response = client.chat.completions.create(
                         model="gpt-3.5-turbo",
                         messages=[
                             {"role": "system", "content": system_prompt},
-                            *st.session_state.chat_history,
+                            *st.session_state.chat_history
                         ],
                         max_tokens=300,
                         temperature=0.7,
                     )
                     reply = response.choices[0].message.content
-                else:
-                    model = genai.GenerativeModel("gemini-1.5-flash")
+                except Exception as e:
+                    if "insufficient_quota" in str(e) or "429" in str(e):
+                        use_openai = False
+                    else:
+                        reply = f"⚠️ Error generating reply: {e}"
+
+            # Gemini fallback if OpenAI fails
+            if not use_openai and use_gemini:
+                try:
+                    gemini_model = genai.GenerativeModel("gemini-1.5-flash")
                     full_prompt = system_prompt + "\n\nUser: " + user_input
-                    gemini_response = model.generate_content(full_prompt)
+                    gemini_response = gemini_model.generate_content(full_prompt)
                     reply = gemini_response.text
+                except Exception as ge:
+                    reply = f"⚠️ Gemini API error: {ge}"
 
-                st.session_state.chat_history.append({"role": "assistant", "content": reply})
+            st.session_state.chat_history.append({"role": "assistant", "content": reply})
 
-            except Exception as e:
-                reply = f"⚠️ Error generating reply: {e}"
-                st.session_state.chat_history.append({"role": "assistant", "content": reply})
-
-    # Display chat
+    # Display chat history
     for msg in st.session_state.chat_history:
         if msg["role"] == "user":
             st.markdown(f"**🧑 You:** {msg['content']}")
