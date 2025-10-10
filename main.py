@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-Multi Disease Prediction + HealthBot
-Updated for OpenAI SDK >= 1.0.0
+Multi-Disease Prediction System + Smart HealthBot
+✅ OpenAI (primary) + Gemini fallback (free)
 """
 
 import pickle
 import streamlit as st
 from streamlit_option_menu import option_menu
 from openai import OpenAI
+import google.generativeai as genai
 
 # ---------------------------------------------------------
 # 1️⃣ Load Models
@@ -17,21 +18,41 @@ heart_model = pickle.load(open('heart_disease_model.sav', 'rb'))
 parkinsons_model = pickle.load(open('parkinsons_model.sav', 'rb'))
 
 # ---------------------------------------------------------
-# 2️⃣ App Sidebar Menu
+# 2️⃣ Page Config
+# ---------------------------------------------------------
+st.set_page_config(page_title="Multi-Disease Prediction System", layout="wide")
+
+# ---------------------------------------------------------
+# 3️⃣ Sidebar
 # ---------------------------------------------------------
 with st.sidebar:
     selected = option_menu(
-        'Multi-Disease Prediction System',
-        ['Diabetes Prediction', 'Heart Disease Prediction', 'Parkinson’s Prediction', 'HealthBot Assistant'],
-        icons=['activity', 'heart', 'brain', 'robot'],
+        '🧬 Disease Prediction System',
+        ['🏠 Home', '💉 Diabetes Prediction', '❤️ Heart Disease Prediction',
+         '🧠 Parkinson’s Prediction', '🤖 HealthBot Assistant'],
+        icons=['house', 'activity', 'heart', 'brain', 'robot'],
         default_index=0
     )
 
 # ---------------------------------------------------------
-# 4️⃣ Diabetes Prediction
+# 4️⃣ Home
 # ---------------------------------------------------------
-if selected == 'Diabetes Prediction':
-    st.title("Diabetes Prediction using ML")
+if selected == '🏠 Home':
+    st.title("🏥 Multi-Disease Prediction & Health Assistant")
+    st.write("""
+    Welcome to the **AI-Powered Health Prediction System**!  
+    This app can:
+    - Predict your risk for **Diabetes**, **Heart Disease**, and **Parkinson’s Disease**  
+    - Chat with a built-in **Health Assistant** that provides general lifestyle and wellness advice  
+      
+    ⚠️ *Disclaimer:* This app is for educational and informational purposes only — not medical advice.
+    """)
+
+# ---------------------------------------------------------
+# 5️⃣ Diabetes Prediction
+# ---------------------------------------------------------
+if selected == '💉 Diabetes Prediction':
+    st.title("💉 Diabetes Prediction using ML")
 
     Pregnancies = st.number_input("Pregnancies", 0)
     Glucose = st.number_input("Glucose Level", 0)
@@ -42,20 +63,20 @@ if selected == 'Diabetes Prediction':
     DiabetesPedigreeFunction = st.number_input("Diabetes Pedigree Function value", 0.0)
     Age = st.number_input("Age", 0)
 
-    if st.button('Diabetes Test Result'):
-        diab_prediction = diabetes_model.predict([[Pregnancies, Glucose, BloodPressure, SkinThickness,
-                                                   Insulin, BMI, DiabetesPedigreeFunction, Age]])
-
+    if st.button('🔍 Diabetes Test Result'):
+        diab_prediction = diabetes_model.predict([[Pregnancies, Glucose, BloodPressure,
+                                                   SkinThickness, Insulin, BMI,
+                                                   DiabetesPedigreeFunction, Age]])
         if diab_prediction[0] == 1:
-            st.error('The person is likely to have diabetes.')
+            st.error('⚠️ The person is likely to have diabetes.')
         else:
-            st.success('The person is not diabetic.')
+            st.success('✅ The person is not diabetic.')
 
 # ---------------------------------------------------------
-# 5️⃣ Heart Disease Prediction
+# 6️⃣ Heart Disease Prediction
 # ---------------------------------------------------------
-if selected == 'Heart Disease Prediction':
-    st.title("Heart Disease Prediction using ML")
+if selected == '❤️ Heart Disease Prediction':
+    st.title("❤️ Heart Disease Prediction using ML")
 
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -75,76 +96,108 @@ if selected == 'Heart Disease Prediction':
         ca = st.number_input('Major vessels colored by fluoroscopy', 0)
         thal = st.number_input('thal (0=Normal, 1=Fixed defect, 2=Reversable defect)', 0)
 
-    if st.button('Heart Disease Test Result'):
+    if st.button('🔍 Heart Disease Test Result'):
         heart_prediction = heart_model.predict([[age, sex, cp, trestbps, chol, fbs, restecg,
                                                  thalach, exang, oldpeak, slope, ca, thal]])
-
         if heart_prediction[0] == 1:
-            st.error('The person is likely to have heart disease.')
+            st.error('💔 The person is likely to have heart disease.')
         else:
-            st.success('The person does not have any heart disease.')
+            st.success('❤️ The person does not have any heart disease.')
 
 # ---------------------------------------------------------
-# 6️⃣ Parkinson’s Prediction
+# 7️⃣ Parkinson’s Prediction
 # ---------------------------------------------------------
-if selected == 'Parkinson’s Prediction':
-    st.title("Parkinson’s Disease Prediction using ML")
+if selected == '🧠 Parkinson’s Prediction':
+    st.title("🧠 Parkinson’s Disease Prediction using ML")
 
-    # (You can shorten or keep full inputs — this example assumes model expects 22 inputs)
     inputs = []
     for i in range(1, 23):
         inputs.append(st.number_input(f'Feature {i}', 0.0))
 
-    if st.button('Parkinson’s Test Result'):
+    if st.button('🔍 Parkinson’s Test Result'):
         park_prediction = parkinsons_model.predict([inputs])
         if park_prediction[0] == 1:
-            st.error('The person likely has Parkinson’s Disease.')
+            st.error('⚠️ The person likely has Parkinson’s Disease.')
         else:
-            st.success('The person is healthy.')
+            st.success('✅ The person is healthy.')
 
 # ---------------------------------------------------------
-# 7️⃣ HealthBot (New API-compatible)
+# 8️⃣ HealthBot Assistant (OpenAI + Gemini fallback)
 # ---------------------------------------------------------
-if selected == 'HealthBot Assistant':
-    st.title("HealthBot — AI Health Assistant")
+if selected == '🤖 HealthBot Assistant':
+    st.title("🤖 AI HealthBot Assistant")
 
-    # Initialize OpenAI client
+    # Try OpenAI first
+    client = None
+    use_openai = False
+
     try:
         client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+        use_openai = True
     except Exception:
-        st.error("Please set your OpenAI API key in Streamlit Secrets.")
+        st.warning("⚠️ OpenAI key missing or invalid. Using Gemini instead.")
+        use_openai = False
+
+    # Gemini fallback config
+    if "GEMINI_API_KEY" in st.secrets:
+        genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+    elif not use_openai:
+        st.error("⚠️ No OpenAI or Gemini API key available. Add at least one in Streamlit secrets.")
         st.stop()
 
-    def ask_openai(prompt_user, system_instructions, max_tokens=300, temp=0.7):
-        """Ask OpenAI chat model safely."""
-        try:
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": system_instructions},
-                    {"role": "user", "content": prompt_user},
-                ],
-                max_tokens=max_tokens,
-                temperature=temp,
-            )
-            return response.choices[0].message.content.strip()
-        except Exception as e:
-            return f"Error contacting OpenAI API: {e}"
+    # Chat memory
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
 
-    st.write("Ask health questions or discuss your test results safely below:")
+    user_input = st.text_area("💬 Ask about health, diet, or exercise:", placeholder="e.g., What foods help manage blood sugar?")
 
-    user_input = st.text_area("You:", placeholder="e.g., What does high glucose level mean?")
-    if st.button("Ask"):
-        with st.spinner("Thinking..."):
+    if st.button("Send"):
+        if user_input.strip() == "":
+            st.warning("Please enter a question.")
+        else:
+            st.session_state.chat_history.append({"role": "user", "content": user_input})
+
             system_prompt = (
-                "You are a careful, friendly health assistant. "
-                "You provide general health explanations and wellness advice. "
-                "You never give medical diagnoses. "
-                "Encourage users to consult a doctor for any serious concerns."
+                "You are a professional, friendly AI health assistant. "
+                "Provide general health guidance and wellness information. "
+                "Focus on lifestyle, diet, exercise, and safety precautions. "
+                "Never give prescriptions or medical diagnoses. "
+                "If something sounds serious, advise seeing a doctor."
             )
-            reply = ask_openai(user_input, system_prompt)
 
-        st.markdown("### HealthBot:")
-        st.write(reply)
+            try:
+                if use_openai:
+                    response = client.chat.completions.create(
+                        model="gpt-3.5-turbo",
+                        messages=[
+                            {"role": "system", "content": system_prompt},
+                            *st.session_state.chat_history,
+                        ],
+                        max_tokens=300,
+                        temperature=0.7,
+                    )
+                    reply = response.choices[0].message.content
+                else:
+                    model = genai.GenerativeModel("gemini-1.5-flash")
+                    full_prompt = system_prompt + "\n\nUser: " + user_input
+                    gemini_response = model.generate_content(full_prompt)
+                    reply = gemini_response.text
 
+                st.session_state.chat_history.append({"role": "assistant", "content": reply})
 
+            except Exception as e:
+                reply = f"⚠️ Error generating reply: {e}"
+                st.session_state.chat_history.append({"role": "assistant", "content": reply})
+
+    # Display chat
+    for msg in st.session_state.chat_history:
+        if msg["role"] == "user":
+            st.markdown(f"**🧑 You:** {msg['content']}")
+        else:
+            st.markdown(f"**🤖 HealthBot:** {msg['content']}")
+
+# ---------------------------------------------------------
+# 9️⃣ Footer
+# ---------------------------------------------------------
+st.markdown("---")
+st.caption("⚕️ Powered by OpenAI GPT / Gemini AI & ML models — Not a substitute for professional medical advice.")
