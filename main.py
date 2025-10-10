@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Multi-Disease Prediction System + Smart HealthBot
-OpenAI (primary) + Gemini fallback
+OpenAI (primary) + Gemini fallback (gemini-2.5-flash-lite)
 """
 
 import pickle
@@ -189,7 +189,7 @@ if selected == '🤖 HealthBot Assistant':
             # Gemini fallback if OpenAI fails
             if not use_openai and use_gemini:
                 try:
-                    gemini_model = genai.GenerativeModel("gemini-1.5-flash")
+                    gemini_model = genai.GenerativeModel("gemini-2.5-flash-lite")
                     full_prompt = system_prompt + "\n\nUser: " + user_input
                     gemini_response = gemini_model.generate_content(full_prompt)
                     reply = gemini_response.text
