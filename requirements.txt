@@ -4,4 +4,6 @@ openai
 numpy
 pandas
 scikit-learn
+google-generativeai
+
 
