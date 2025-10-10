@@ -22,7 +22,7 @@ parkinsons_model = pickle.load(open('parkinsons_model.sav', 'rb'))
 with st.sidebar:
     selected = option_menu(
         'Multi-Disease Prediction System',
-        ['💉 Diabetes Prediction', '❤️ Heart Disease Prediction', '🧠 Parkinson’s Prediction', '🤖 HealthBot Assistant'],
+        ['Diabetes Prediction', 'Heart Disease Prediction', 'Parkinson’s Prediction', 'HealthBot Assistant'],
         icons=['activity', 'heart', 'brain', 'robot'],
         default_index=0
     )
@@ -30,8 +30,8 @@ with st.sidebar:
 # ---------------------------------------------------------
 # 4️⃣ Diabetes Prediction
 # ---------------------------------------------------------
-if selected == '💉 Diabetes Prediction':
-    st.title("💉 Diabetes Prediction using ML")
+if selected == 'Diabetes Prediction':
+    st.title("Diabetes Prediction using ML")
 
     Pregnancies = st.number_input("Pregnancies", 0)
     Glucose = st.number_input("Glucose Level", 0)
@@ -47,15 +47,15 @@ if selected == '💉 Diabetes Prediction':
                                                    Insulin, BMI, DiabetesPedigreeFunction, Age]])
 
         if diab_prediction[0] == 1:
-            st.error('⚠️ The person is likely to have diabetes.')
+            st.error('The person is likely to have diabetes.')
         else:
-            st.success('✅ The person is not diabetic.')
+            st.success('The person is not diabetic.')
 
 # ---------------------------------------------------------
 # 5️⃣ Heart Disease Prediction
 # ---------------------------------------------------------
-if selected == '❤️ Heart Disease Prediction':
-    st.title("❤️ Heart Disease Prediction using ML")
+if selected == 'Heart Disease Prediction':
+    st.title("Heart Disease Prediction using ML")
 
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -80,15 +80,15 @@ if selected == '❤️ Heart Disease Prediction':
                                                  thalach, exang, oldpeak, slope, ca, thal]])
 
         if heart_prediction[0] == 1:
-            st.error('💔 The person is likely to have heart disease.')
+            st.error('The person is likely to have heart disease.')
         else:
-            st.success('❤️ The person does not have any heart disease.')
+            st.success('The person does not have any heart disease.')
 
 # ---------------------------------------------------------
 # 6️⃣ Parkinson’s Prediction
 # ---------------------------------------------------------
-if selected == '🧠 Parkinson’s Prediction':
-    st.title("🧠 Parkinson’s Disease Prediction using ML")
+if selected == 'Parkinson’s Prediction':
+    st.title("Parkinson’s Disease Prediction using ML")
 
     # (You can shorten or keep full inputs — this example assumes model expects 22 inputs)
     inputs = []
@@ -98,21 +98,21 @@ if selected == '🧠 Parkinson’s Prediction':
     if st.button('Parkinson’s Test Result'):
         park_prediction = parkinsons_model.predict([inputs])
         if park_prediction[0] == 1:
-            st.error('⚠️ The person likely has Parkinson’s Disease.')
+            st.error('The person likely has Parkinson’s Disease.')
         else:
-            st.success('✅ The person is healthy.')
+            st.success('The person is healthy.')
 
 # ---------------------------------------------------------
 # 7️⃣ HealthBot (New API-compatible)
 # ---------------------------------------------------------
-if selected == '🤖 HealthBot Assistant':
-    st.title("🤖 HealthBot — AI Health Assistant")
+if selected == 'HealthBot Assistant':
+    st.title("HealthBot — AI Health Assistant")
 
     # Initialize OpenAI client
     try:
         client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
     except Exception:
-        st.error("⚠️ Please set your OpenAI API key in Streamlit Secrets.")
+        st.error("Please set your OpenAI API key in Streamlit Secrets.")
         st.stop()
 
     def ask_openai(prompt_user, system_instructions, max_tokens=300, temp=0.7):
@@ -129,9 +129,9 @@ if selected == '🤖 HealthBot Assistant':
             )
             return response.choices[0].message.content.strip()
         except Exception as e:
-            return f"⚠️ Error contacting OpenAI API: {e}"
+            return f"Error contacting OpenAI API: {e}"
 
-    st.write("💬 Ask health questions or discuss your test results safely below:")
+    st.write("Ask health questions or discuss your test results safely below:")
 
     user_input = st.text_area("You:", placeholder="e.g., What does high glucose level mean?")
     if st.button("Ask"):
@@ -144,11 +144,7 @@ if selected == '🤖 HealthBot Assistant':
             )
             reply = ask_openai(user_input, system_prompt)
 
-        st.markdown("### 🩺 HealthBot:")
+        st.markdown("### HealthBot:")
         st.write(reply)
 
-# ---------------------------------------------------------
-# 8️⃣ Footer
-# ---------------------------------------------------------
-st.markdown("---")
-st.caption("⚕️ Powered by OpenAI GPT & ML Models — Not a replacement for professional medical advice.")
+
