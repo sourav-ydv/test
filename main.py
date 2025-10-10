@@ -166,74 +166,73 @@ if selected == '🤖 HealthBot Assistant':
             st.error("⚠️ No AI key found. Cannot generate replies.")
             st.stop()
 
-    # Initialize chat history
+    # Initialize chat history and input
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
+    if "user_input_text" not in st.session_state:
+        st.session_state.user_input_text = ""
 
     # Container for chat
     chat_container = st.empty()
 
     # Input box at bottom
-    user_input = st.text_area("💬 Ask about health, diet, or exercise:", key="user_input")
+    user_input = st.text_area("💬 Ask about health, diet, or exercise:", value=st.session_state.user_input_text, key="user_input_text")
     send_button = st.button("Send")
 
-    if send_button:
-        if user_input.strip() == "":
-            st.warning("Please enter a question.")
-        else:
-            st.session_state.chat_history.append({"role": "user", "content": user_input})
+    if send_button and user_input.strip() != "":
+        st.session_state.chat_history.append({"role": "user", "content": user_input})
 
-            system_prompt = (
-                "You are a professional, friendly AI health assistant. "
-                "Provide general health guidance and wellness information. "
-                "Focus on lifestyle, diet, exercise, and safety precautions. "
-                "Never give prescriptions or medical diagnoses. "
-                "If something sounds serious, advise seeing a doctor."
+        system_prompt = (
+            "You are a professional, friendly AI health assistant. "
+            "Provide general health guidance and wellness information. "
+            "Focus on lifestyle, diet, exercise, and safety precautions. "
+            "Never give prescriptions or medical diagnoses. "
+            "If something sounds serious, advise seeing a doctor."
+        )
+
+        # Include last prediction context
+        last_pred = st.session_state.get('last_prediction', None)
+        user_context = ""
+        if last_pred:
+            user_context = (
+                f"\n\nUser recently tested for {last_pred['disease']}.\n"
+                f"Input data: {last_pred['input']}\n"
+                f"Prediction result: {last_pred['result']}"
             )
 
-            # Include last prediction context
-            last_pred = st.session_state.get('last_prediction', None)
-            user_context = ""
-            if last_pred:
-                user_context = (
-                    f"\n\nUser recently tested for {last_pred['disease']}.\n"
-                    f"Input data: {last_pred['input']}\n"
-                    f"Prediction result: {last_pred['result']}"
+        full_prompt = system_prompt + user_context + "\n\nUser Question: " + user_input
+
+        # Generate AI reply
+        reply = ""
+        if use_openai:
+            try:
+                response = client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[{"role": "user", "content": full_prompt}],
+                    max_tokens=300,
+                    temperature=0.7,
                 )
+                reply = response.choices[0].message.content
+            except Exception as e:
+                if "insufficient_quota" in str(e) or "429" in str(e):
+                    use_openai = False
+                else:
+                    reply = f"⚠️ Error generating reply: {e}"
 
-            full_prompt = system_prompt + user_context + "\n\nUser Question: " + user_input
+        if not use_openai and use_gemini:
+            try:
+                gemini_model = genai.GenerativeModel("gemini-2.5-flash-lite")
+                gemini_response = gemini_model.generate_content(full_prompt)
+                reply = gemini_response.text
+            except Exception as ge:
+                reply = f"⚠️ Gemini API error: {ge}"
 
-            # Generate AI reply
-            reply = ""
-            if use_openai:
-                try:
-                    response = client.chat.completions.create(
-                        model="gpt-3.5-turbo",
-                        messages=[{"role": "user", "content": full_prompt}],
-                        max_tokens=300,
-                        temperature=0.7,
-                    )
-                    reply = response.choices[0].message.content
-                except Exception as e:
-                    if "insufficient_quota" in str(e) or "429" in str(e):
-                        use_openai = False
-                    else:
-                        reply = f"⚠️ Error generating reply: {e}"
+        st.session_state.chat_history.append({"role": "assistant", "content": reply})
 
-            if not use_openai and use_gemini:
-                try:
-                    gemini_model = genai.GenerativeModel("gemini-2.5-flash-lite")
-                    gemini_response = gemini_model.generate_content(full_prompt)
-                    reply = gemini_response.text
-                except Exception as ge:
-                    reply = f"⚠️ Gemini API error: {ge}"
+        # Clear text area safely
+        st.session_state.user_input_text = ""
 
-            st.session_state.chat_history.append({"role": "assistant", "content": reply})
-
-            # Rerun safely to clear text area
-            st.experimental_rerun()
-
-    # Display chat with auto-scroll
+    # Display chat history
     with chat_container:
         for msg in st.session_state.chat_history:
             if msg["role"] == "user":
