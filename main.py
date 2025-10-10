@@ -229,7 +229,9 @@ if selected == '🤖 HealthBot Assistant':
                     reply = f"⚠️ Gemini API error: {ge}"
 
             st.session_state.chat_history.append({"role": "assistant", "content": reply})
-            st.session_state.user_input = ""
+
+            # Rerun safely to clear text area
+            st.experimental_rerun()
 
     # Display chat with auto-scroll
     with chat_container:
