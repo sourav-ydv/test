@@ -64,13 +64,19 @@ if selected == '💉 Diabetes Prediction':
     Age = st.number_input("Age", 0)
 
     if st.button('🔍 Diabetes Test Result'):
-        diab_prediction = diabetes_model.predict([[Pregnancies, Glucose, BloodPressure,
-                                                   SkinThickness, Insulin, BMI,
-                                                   DiabetesPedigreeFunction, Age]])
+        user_input_d = [Pregnancies, Glucose, BloodPressure, SkinThickness, Insulin, BMI, DiabetesPedigreeFunction, Age]
+        diab_prediction = diabetes_model.predict([user_input_d])
         if diab_prediction[0] == 1:
             st.error('⚠️ The person is likely to have diabetes.')
+            diab_status = 'likely to have diabetes'
         else:
             st.success('✅ The person is not diabetic.')
+            diab_status = 'not diabetic'
+        st.session_state['last_prediction'] = {
+            'disease': 'Diabetes',
+            'input': user_input_d,
+            'result': diab_status
+        }
 
 # ---------------------------------------------------------
 # 6️⃣ Heart Disease Prediction
@@ -97,12 +103,19 @@ if selected == '❤️ Heart Disease Prediction':
         thal = st.number_input('thal (0=Normal, 1=Fixed defect, 2=Reversable defect)', 0)
 
     if st.button('🔍 Heart Disease Test Result'):
-        heart_prediction = heart_model.predict([[age, sex, cp, trestbps, chol, fbs, restecg,
-                                                 thalach, exang, oldpeak, slope, ca, thal]])
+        user_input_h = [age, sex, cp, trestbps, chol, fbs, restecg, thalach, exang, oldpeak, slope, ca, thal]
+        heart_prediction = heart_model.predict([user_input_h])
         if heart_prediction[0] == 1:
             st.error('💔 The person is likely to have heart disease.')
+            heart_status = 'likely to have heart disease'
         else:
             st.success('❤️ The person does not have any heart disease.')
+            heart_status = 'does not have any heart disease'
+        st.session_state['last_prediction'] = {
+            'disease': 'Heart Disease',
+            'input': user_input_h,
+            'result': heart_status
+        }
 
 # ---------------------------------------------------------
 # 7️⃣ Parkinson’s Prediction
@@ -115,11 +128,19 @@ if selected == '🧠 Parkinson’s Prediction':
         inputs.append(st.number_input(f'Feature {i}', 0.0))
 
     if st.button('🔍 Parkinson’s Test Result'):
-        park_prediction = parkinsons_model.predict([inputs])
+        user_input_p = inputs
+        park_prediction = parkinsons_model.predict([user_input_p])
         if park_prediction[0] == 1:
             st.error('⚠️ The person likely has Parkinson’s Disease.')
+            park_status = 'likely to have Parkinson’s Disease'
         else:
             st.success('✅ The person is healthy.')
+            park_status = 'does not have Parkinson’s Disease'
+        st.session_state['last_prediction'] = {
+            'disease': 'Parkinson’s Disease',
+            'input': user_input_p,
+            'result': park_status
+        }
 
 # ---------------------------------------------------------
 # 8️⃣ HealthBot Assistant (OpenAI + Gemini Fallback)
@@ -158,6 +179,7 @@ if selected == '🤖 HealthBot Assistant':
         else:
             st.session_state.chat_history.append({"role": "user", "content": user_input})
 
+            # System prompt
             system_prompt = (
                 "You are a professional, friendly AI health assistant. "
                 "Provide general health guidance and wellness information. "
@@ -166,16 +188,26 @@ if selected == '🤖 HealthBot Assistant':
                 "If something sounds serious, advise seeing a doctor."
             )
 
+            # Include last prediction context
+            last_pred = st.session_state.get('last_prediction', None)
+            if last_pred:
+                user_context = (
+                    f"\n\nUser recently tested for {last_pred['disease']}.\n"
+                    f"Input data: {last_pred['input']}\n"
+                    f"Prediction result: {last_pred['result']}"
+                )
+            else:
+                user_context = ""
+
+            full_prompt = system_prompt + user_context + "\n\nUser Question: " + user_input
+
             reply = ""
-            # Try OpenAI first
+            # OpenAI
             if use_openai:
                 try:
                     response = client.chat.completions.create(
                         model="gpt-3.5-turbo",
-                        messages=[
-                            {"role": "system", "content": system_prompt},
-                            *st.session_state.chat_history
-                        ],
+                        messages=[{"role": "user", "content": full_prompt}],
                         max_tokens=300,
                         temperature=0.7,
                     )
@@ -186,11 +218,10 @@ if selected == '🤖 HealthBot Assistant':
                     else:
                         reply = f"⚠️ Error generating reply: {e}"
 
-            # Gemini fallback if OpenAI fails
+            # Gemini fallback
             if not use_openai and use_gemini:
                 try:
                     gemini_model = genai.GenerativeModel("gemini-2.5-flash-lite")
-                    full_prompt = system_prompt + "\n\nUser: " + user_input
                     gemini_response = gemini_model.generate_content(full_prompt)
                     reply = gemini_response.text
                 except Exception as ge:
