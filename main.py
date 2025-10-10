@@ -12,9 +12,9 @@ from openai import OpenAI
 # ---------------------------------------------------------
 # 1️⃣ Load Models
 # ---------------------------------------------------------
-diabetes_model = pickle.load(open('diabetes_model.sav', 'rb'))
-heart_model = pickle.load(open('heart_disease_model.sav', 'rb'))
-parkinsons_model = pickle.load(open('parkinsons_model.sav', 'rb'))
+diabetes_model = pickle.load(open('models/diabetes_model.sav', 'rb'))
+heart_model = pickle.load(open('models/heart_model.sav', 'rb'))
+parkinsons_model = pickle.load(open('models/parkinsons_model.sav', 'rb'))
 
 # ---------------------------------------------------------
 # 2️⃣ App Sidebar Menu
@@ -22,7 +22,7 @@ parkinsons_model = pickle.load(open('parkinsons_model.sav', 'rb'))
 with st.sidebar:
     selected = option_menu(
         'Multi-Disease Prediction System',
-        ['Diabetes Prediction', 'Heart Disease Prediction', 'Parkinson’s Prediction', 'HealthBot Assistant'],
+        ['💉 Diabetes Prediction', '❤️ Heart Disease Prediction', '🧠 Parkinson’s Prediction', '🤖 HealthBot Assistant'],
         icons=['activity', 'heart', 'brain', 'robot'],
         default_index=0
     )
@@ -152,8 +152,3 @@ if selected == '🤖 HealthBot Assistant':
 # ---------------------------------------------------------
 st.markdown("---")
 st.caption("⚕️ Powered by OpenAI GPT & ML Models — Not a replacement for professional medical advice.")
-
-
-
-
-
