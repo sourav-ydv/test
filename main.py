@@ -28,19 +28,6 @@ with st.sidebar:
     )
 
 # ---------------------------------------------------------
-# 3️⃣ Page: Home
-# ---------------------------------------------------------
-if selected == '🏠 Home':
-    st.title("🏥 Multi-Disease Prediction & Health Assistant")
-    st.write("""
-        Welcome! This system can:
-        - Predict your risk for **Diabetes**, **Heart Disease**, or **Parkinson’s Disease**  
-        - Chat with an AI-powered **Health Assistant** for health-related guidance  
-        
-        ⚠️ *This app provides general information and is not a substitute for a doctor.*
-    """)
-
-# ---------------------------------------------------------
 # 4️⃣ Diabetes Prediction
 # ---------------------------------------------------------
 if selected == '💉 Diabetes Prediction':
@@ -165,5 +152,6 @@ if selected == '🤖 HealthBot Assistant':
 # ---------------------------------------------------------
 st.markdown("---")
 st.caption("⚕️ Powered by OpenAI GPT & ML Models — Not a replacement for professional medical advice.")
+
 
 
