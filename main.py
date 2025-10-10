@@ -12,9 +12,9 @@ from openai import OpenAI
 # ---------------------------------------------------------
 # 1️⃣ Load Models
 # ---------------------------------------------------------
-diabetes_model = pickle.load(open('models/diabetes_model.sav', 'rb'))
-heart_model = pickle.load(open('models/heart_model.sav', 'rb'))
-parkinsons_model = pickle.load(open('models/parkinsons_model.sav', 'rb'))
+diabetes_model = pickle.load(open('diabetes_model.sav', 'rb'))
+heart_model = pickle.load(open('heart_disease_model.sav', 'rb'))
+parkinsons_model = pickle.load(open('parkinsons_model.sav', 'rb'))
 
 # ---------------------------------------------------------
 # 2️⃣ App Sidebar Menu
