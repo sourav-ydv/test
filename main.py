@@ -148,7 +148,7 @@ if selected == '🧠 Parkinson’s Prediction':
 if selected == '🤖 HealthBot Assistant':
     st.title("🤖 AI HealthBot Assistant")
 
-    # Initialize OpenAI
+    # Initialize APIs
     use_openai = False
     client = None
     try:
@@ -157,29 +157,32 @@ if selected == '🤖 HealthBot Assistant':
     except Exception:
         st.warning("⚠️ OpenAI key missing or invalid. Will use Gemini fallback.")
 
-    # Configure Gemini
     try:
         genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
         use_gemini = True
     except Exception:
         use_gemini = False
         if not use_openai:
-            st.error("⚠️ No OpenAI or Gemini API key found. Cannot generate replies.")
+            st.error("⚠️ No AI key found. Cannot generate replies.")
             st.stop()
 
-    # Memory for chat
+    # Initialize chat history
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
 
-    user_input = st.text_area("💬 Ask about health, diet, or exercise:")
+    # Container for chat
+    chat_container = st.empty()
 
-    if st.button("Send"):
+    # Input box at bottom
+    user_input = st.text_area("💬 Ask about health, diet, or exercise:", key="user_input")
+    send_button = st.button("Send")
+
+    if send_button:
         if user_input.strip() == "":
             st.warning("Please enter a question.")
         else:
             st.session_state.chat_history.append({"role": "user", "content": user_input})
 
-            # System prompt
             system_prompt = (
                 "You are a professional, friendly AI health assistant. "
                 "Provide general health guidance and wellness information. "
@@ -190,19 +193,18 @@ if selected == '🤖 HealthBot Assistant':
 
             # Include last prediction context
             last_pred = st.session_state.get('last_prediction', None)
+            user_context = ""
             if last_pred:
                 user_context = (
                     f"\n\nUser recently tested for {last_pred['disease']}.\n"
                     f"Input data: {last_pred['input']}\n"
                     f"Prediction result: {last_pred['result']}"
                 )
-            else:
-                user_context = ""
 
             full_prompt = system_prompt + user_context + "\n\nUser Question: " + user_input
 
+            # Generate AI reply
             reply = ""
-            # OpenAI
             if use_openai:
                 try:
                     response = client.chat.completions.create(
@@ -218,7 +220,6 @@ if selected == '🤖 HealthBot Assistant':
                     else:
                         reply = f"⚠️ Error generating reply: {e}"
 
-            # Gemini fallback
             if not use_openai and use_gemini:
                 try:
                     gemini_model = genai.GenerativeModel("gemini-2.5-flash-lite")
@@ -228,13 +229,16 @@ if selected == '🤖 HealthBot Assistant':
                     reply = f"⚠️ Gemini API error: {ge}"
 
             st.session_state.chat_history.append({"role": "assistant", "content": reply})
+            st.session_state.user_input = ""
 
-    # Display chat history
-    for msg in st.session_state.chat_history:
-        if msg["role"] == "user":
-            st.markdown(f"**🧑 You:** {msg['content']}")
-        else:
-            st.markdown(f"**🤖 HealthBot:** {msg['content']}")
+    # Display chat with auto-scroll
+    with chat_container:
+        for msg in st.session_state.chat_history:
+            if msg["role"] == "user":
+                st.markdown(f"**🧑 You:** {msg['content']}")
+            else:
+                st.markdown(f"**🤖 HealthBot:** {msg['content']}")
+        st.markdown("<div></div>", unsafe_allow_html=True)
 
 # ---------------------------------------------------------
 # 9️⃣ Footer
