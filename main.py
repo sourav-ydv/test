@@ -181,7 +181,7 @@ if selected == 'HealthBot Assistant':
     # --- Input Area at Bottom ---
     with input_container:
         st.markdown("---")
-        user_input = st.text_area("💬 Type your message:", key="chat_input", height=80)
+        user_input = st.text_area("💬 Type your message:", key="chat_input", height=80, placeholder="Ask about health, diet, or exercise...")
         send_btn = st.button("Send", use_container_width=True)
 
     if send_btn and user_input.strip():
@@ -236,4 +236,5 @@ if selected == 'HealthBot Assistant':
 
         # Refresh UI and scroll to bottom
         st.rerun()
+
 
