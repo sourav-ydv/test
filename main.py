@@ -40,7 +40,7 @@ with st.sidebar:
 if selected == 'Diabetes Prediction':
     st.title("Diabetes Prediction using ML")
 
-    Pregnancies = st.number_input("Pregnancies")
+    Pregnancies = st.text_input("Pregnancies")
     Glucose = st.number_input("Glucose Level")
     BloodPressure = st.number_input("Blood Pressure value")
     SkinThickness = st.number_input("Skin Thickness value")
@@ -50,7 +50,7 @@ if selected == 'Diabetes Prediction':
     Age = st.number_input("Age")
 
     if st.button('Diabetes Test Result'):
-        user_input_d = [Pregnancies, Glucose, BloodPressure, SkinThickness, Insulin, BMI, DiabetesPedigreeFunction, Age]
+        user_input_d = [int(Pregnancies), Glucose, BloodPressure, SkinThickness, Insulin, BMI, DiabetesPedigreeFunction, Age]
         diab_prediction = diabetes_model.predict([user_input_d])
         if diab_prediction[0] == 1:
             st.error('The person is likely to have diabetes.')
@@ -236,6 +236,7 @@ if selected == 'HealthBot Assistant':
 
         # Refresh UI and scroll to bottom
         st.rerun()
+
 
 
 
