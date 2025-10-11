@@ -27,32 +27,18 @@ st.set_page_config(page_title="Multi-Disease Prediction System", layout="wide")
 # ---------------------------------------------------------
 with st.sidebar:
     selected = option_menu(
-        '🧬 Disease Prediction System',
-        ['🏠 Home', '💉 Diabetes Prediction', '❤️ Heart Disease Prediction',
-         '🧠 Parkinson’s Prediction', '🤖 HealthBot Assistant'],
-        icons=['house', 'activity', 'heart', 'brain', 'robot'],
+        'Disease Prediction System',
+        ['Diabetes Prediction', 'Heart Disease Prediction',
+         'Parkinson’s Prediction', 'HealthBot Assistant'],
+        icons=['activity', 'heart', 'brain', 'robot'],
         default_index=0
     )
 
 # ---------------------------------------------------------
-# 4️⃣ Home Page
-# ---------------------------------------------------------
-if selected == '🏠 Home':
-    st.title("🏥 Multi-Disease Prediction & Health Assistant")
-    st.write("""
-    Welcome to the **AI-Powered Health Prediction System**!  
-    This app can:
-    - Predict your risk for **Diabetes**, **Heart Disease**, and **Parkinson’s Disease**  
-    - Chat with a built-in **Health Assistant** for general lifestyle and wellness guidance  
-
-    ⚠️ *Disclaimer:* This app is for educational and informational purposes only — not medical advice.
-    """)
-
-# ---------------------------------------------------------
 # 5️⃣ Diabetes Prediction
 # ---------------------------------------------------------
-if selected == '💉 Diabetes Prediction':
-    st.title("💉 Diabetes Prediction using ML")
+if selected == 'Diabetes Prediction':
+    st.title("Diabetes Prediction using ML")
 
     Pregnancies = st.number_input("Pregnancies", 0)
     Glucose = st.number_input("Glucose Level", 0)
@@ -63,14 +49,14 @@ if selected == '💉 Diabetes Prediction':
     DiabetesPedigreeFunction = st.number_input("Diabetes Pedigree Function value", 0.0)
     Age = st.number_input("Age", 0)
 
-    if st.button('🔍 Diabetes Test Result'):
+    if st.button('Diabetes Test Result'):
         user_input_d = [Pregnancies, Glucose, BloodPressure, SkinThickness, Insulin, BMI, DiabetesPedigreeFunction, Age]
         diab_prediction = diabetes_model.predict([user_input_d])
         if diab_prediction[0] == 1:
-            st.error('⚠️ The person is likely to have diabetes.')
+            st.error('The person is likely to have diabetes.')
             diab_status = 'likely to have diabetes'
         else:
-            st.success('✅ The person is not diabetic.')
+            st.success('The person is not diabetic.')
             diab_status = 'not diabetic'
         st.session_state['last_prediction'] = {
             'disease': 'Diabetes',
@@ -81,8 +67,8 @@ if selected == '💉 Diabetes Prediction':
 # ---------------------------------------------------------
 # 6️⃣ Heart Disease Prediction
 # ---------------------------------------------------------
-if selected == '❤️ Heart Disease Prediction':
-    st.title("❤️ Heart Disease Prediction using ML")
+if selected == 'Heart Disease Prediction':
+    st.title("Heart Disease Prediction using ML")
 
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -102,14 +88,14 @@ if selected == '❤️ Heart Disease Prediction':
         ca = st.number_input('Major vessels colored by fluoroscopy', 0)
         thal = st.number_input('thal (0=Normal, 1=Fixed defect, 2=Reversable defect)', 0)
 
-    if st.button('🔍 Heart Disease Test Result'):
+    if st.button('Heart Disease Test Result'):
         user_input_h = [age, sex, cp, trestbps, chol, fbs, restecg, thalach, exang, oldpeak, slope, ca, thal]
         heart_prediction = heart_model.predict([user_input_h])
         if heart_prediction[0] == 1:
-            st.error('💔 The person is likely to have heart disease.')
+            st.error('The person is likely to have heart disease.')
             heart_status = 'likely to have heart disease'
         else:
-            st.success('❤️ The person does not have any heart disease.')
+            st.success('The person does not have any heart disease.')
             heart_status = 'does not have any heart disease'
         st.session_state['last_prediction'] = {
             'disease': 'Heart Disease',
@@ -120,21 +106,21 @@ if selected == '❤️ Heart Disease Prediction':
 # ---------------------------------------------------------
 # 7️⃣ Parkinson’s Prediction
 # ---------------------------------------------------------
-if selected == '🧠 Parkinson’s Prediction':
-    st.title("🧠 Parkinson’s Disease Prediction using ML")
+if selected == 'Parkinson’s Prediction':
+    st.title("Parkinson’s Disease Prediction using ML")
 
     inputs = []
     for i in range(1, 23):
         inputs.append(st.number_input(f'Feature {i}', 0.0))
 
-    if st.button('🔍 Parkinson’s Test Result'):
+    if st.button('Parkinson’s Test Result'):
         user_input_p = inputs
         park_prediction = parkinsons_model.predict([user_input_p])
         if park_prediction[0] == 1:
-            st.error('⚠️ The person likely has Parkinson’s Disease.')
+            st.error('The person likely has Parkinson’s Disease.')
             park_status = 'likely to have Parkinson’s Disease'
         else:
-            st.success('✅ The person is healthy.')
+            st.success('The person is healthy.')
             park_status = 'does not have Parkinson’s Disease'
         st.session_state['last_prediction'] = {
             'disease': 'Parkinson’s Disease',
@@ -145,8 +131,8 @@ if selected == '🧠 Parkinson’s Prediction':
 # ---------------------------------------------------------
 # 8️⃣ HealthBot Assistant (ChatGPT-like UI)
 # ---------------------------------------------------------
-if selected == '🤖 HealthBot Assistant':
-    st.title("🤖 AI HealthBot Assistant")
+if selected == 'HealthBot Assistant':
+    st.title("AI HealthBot Assistant")
 
     # --- API Initialization ---
     use_openai = False
@@ -155,7 +141,7 @@ if selected == '🤖 HealthBot Assistant':
         client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
         use_openai = True
     except Exception:
-        st.warning("⚠️ OpenAI key missing or invalid. Will use Gemini fallback.")
+        st.warning("OpenAI key missing or invalid. Will use Gemini fallback.")
 
     try:
         genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
@@ -163,7 +149,7 @@ if selected == '🤖 HealthBot Assistant':
     except Exception:
         use_gemini = False
         if not use_openai:
-            st.error("⚠️ No OpenAI or Gemini API key found. Cannot generate replies.")
+            st.error("No OpenAI or Gemini API key found. Cannot generate replies.")
             st.stop()
 
     # --- Chat Memory ---
@@ -195,7 +181,7 @@ if selected == '🤖 HealthBot Assistant':
     # --- Input Area at Bottom ---
     with input_container:
         st.markdown("---")
-        user_input = st.text_area("💬 Type your message:", key="chat_input", height=80, placeholder="Ask about health, diet, or exercise...")
+        user_input = st.text_area("💬 Type your message:", key="chat_input", height=80)
         send_btn = st.button("Send", use_container_width=True)
 
     if send_btn and user_input.strip():
@@ -235,7 +221,7 @@ if selected == '🤖 HealthBot Assistant':
                 if "insufficient_quota" in str(e) or "429" in str(e):
                     use_openai = False
                 else:
-                    reply = f"⚠️ Error generating reply: {e}"
+                    reply = f"Error generating reply: {e}"
 
         # --- Gemini Fallback ---
         if not use_openai and use_gemini:
@@ -244,15 +230,10 @@ if selected == '🤖 HealthBot Assistant':
                 gemini_response = gemini_model.generate_content(full_prompt)
                 reply = gemini_response.text
             except Exception as ge:
-                reply = f"⚠️ Gemini API error: {ge}"
+                reply = f"Gemini API error: {ge}"
 
         st.session_state.chat_history.append({"role": "assistant", "content": reply})
 
         # Refresh UI and scroll to bottom
         st.rerun()
 
-# ---------------------------------------------------------
-# 9️⃣ Footer
-# ---------------------------------------------------------
-st.markdown("---")
-st.caption("⚕️ Powered by OpenAI GPT / Gemini AI & ML models — Not a substitute for professional medical advice.")
