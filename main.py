@@ -40,17 +40,19 @@ with st.sidebar:
 if selected == 'Diabetes Prediction':
     st.title("Diabetes Prediction using ML")
 
-    Pregnancies = st.number_input("Pregnancies", 0)
-    Glucose = st.number_input("Glucose Level", 0)
-    BloodPressure = st.number_input("Blood Pressure value", 0)
-    SkinThickness = st.number_input("Skin Thickness value", 0)
-    Insulin = st.number_input("Insulin Level", 0)
-    BMI = st.number_input("BMI value", 0.0)
-    DiabetesPedigreeFunction = st.number_input("Diabetes Pedigree Function value", 0.0)
-    Age = st.number_input("Age", 0)
+    Pregnancies = st.text_input("Pregnancies")
+    Glucose = st.text_input("Glucose Level")
+    BloodPressure = st.text_input("Blood Pressure value")
+    SkinThickness = st.text_input("Skin Thickness value")
+    Insulin = st.text_input("Insulin Level")
+    BMI = st.text_input("BMI value")
+    DiabetesPedigreeFunction = st.text_input("Diabetes Pedigree Function value")
+    Age = st.text_input("Age")
 
     if st.button('Diabetes Test Result'):
-        user_input_d = [Pregnancies, Glucose, BloodPressure, SkinThickness, Insulin, BMI, DiabetesPedigreeFunction, Age]
+        user_input_d = [int(Pregnancies), int(Glucose), int(BloodPressure),
+                      int(SkinThickness), int(Insulin), float(BMI),
+                      float(DiabetesPedigreeFunction), int(Age)]
         diab_prediction = diabetes_model.predict([user_input_d])
         if diab_prediction[0] == 1:
             st.error('The person is likely to have diabetes.')
@@ -72,24 +74,28 @@ if selected == 'Heart Disease Prediction':
 
     col1, col2, col3 = st.columns(3)
     with col1:
-        age = st.number_input('Age', 0)
-        sex = st.selectbox('Sex (1=Male, 0=Female)', [0, 1])
-        cp = st.number_input('Chest Pain types', 0)
-        trestbps = st.number_input('Resting Blood Pressure', 0)
+        age = st.text_input('Age')
+        sex = st.text_input('Sex (1=Male, 0=Female)')
+        cp = st.text_input('Chest Pain types')
+        trestbps = st.text_input('Resting Blood Pressure')
     with col2:
-        chol = st.number_input('Serum Cholestoral in mg/dl', 0)
-        fbs = st.selectbox('Fasting Blood Sugar > 120 mg/dl (1=True, 0=False)', [0, 1])
-        restecg = st.number_input('Resting Electrocardiographic results', 0)
-        thalach = st.number_input('Maximum Heart Rate achieved', 0)
+        chol = st.text_input('Serum Cholestoral in mg/dl')
+        fbs = st.text_input('Fasting Blood Sugar > 120 mg/dl (1=True, 0=False)')
+        restecg = st.text_input('Resting Electrocardiographic results')
+        thalach = st.text_input('Maximum Heart Rate achieved')
     with col3:
-        exang = st.selectbox('Exercise Induced Angina (1=True, 0=False)', [0, 1])
-        oldpeak = st.number_input('ST depression induced by exercise', 0.0)
-        slope = st.number_input('Slope of the peak exercise ST segment', 0)
-        ca = st.number_input('Major vessels colored by fluoroscopy', 0)
-        thal = st.number_input('thal (0=Normal, 1=Fixed defect, 2=Reversable defect)', 0)
+        exang = st.text_input('Exercise Induced Angina (1=True, 0=False)')
+        oldpeak = st.text_input('ST depression induced by exercise')
+        slope = st.text_input('Slope of the peak exercise ST segment')
+        ca = st.text_input('Major vessels colored by fluoroscopy')
+        thal = st.text_input('thal (0=Normal, 1=Fixed defect, 2=Reversable defect)')
 
     if st.button('Heart Disease Test Result'):
-        user_input_h = [age, sex, cp, trestbps, chol, fbs, restecg, thalach, exang, oldpeak, slope, ca, thal]
+        user_input_h = [
+            int(age), int(sex), int(cp), int(trestbps), int(chol),
+            int(fbs), int(restecg), int(thalach), int(exang),
+            float(oldpeak), int(slope), int(ca), int(thal)
+        ]
         heart_prediction = heart_model.predict([user_input_h])
         if heart_prediction[0] == 1:
             st.error('The person is likely to have heart disease.')
@@ -181,7 +187,7 @@ if selected == 'HealthBot Assistant':
     # --- Input Area at Bottom ---
     with input_container:
         st.markdown("---")
-        user_input = st.text_area("💬 Type your message:", key="chat_input", height=80)
+        user_input = st.text_area("💬 Type your message:", key="chat_input", height=80, placeholder="Enter your question here...")
         send_btn = st.button("Send", use_container_width=True)
 
     if send_btn and user_input.strip():
@@ -236,3 +242,4 @@ if selected == 'HealthBot Assistant':
 
         # Refresh UI and scroll to bottom
         st.rerun()
+
