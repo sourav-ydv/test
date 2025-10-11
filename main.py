@@ -161,19 +161,22 @@ if selected == 'HealthBot Assistant':
     with chat_container:
         for msg in st.session_state.chat_history:
             if msg["role"] == "user":
-                st.markdown(f"""
-                <div style='background-color:#1e1e1e;padding:10px 15px;border-radius:12px;
-                margin:8px 0;text-align:right;color:#fff;'>
-                🧑 <b>You:</b> {msg['content']}
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(
+                    f"<div style='background-color:#1e1e1e;padding:10px 15px;border-radius:12px;"
+                    f"margin:8px 0;text-align:right;color:#fff;'>"
+                    f"🧑 <b>You:</b> {msg['content']}"
+                    f"</div>",
+                    unsafe_allow_html=True
+                )
             else:
-                st.markdown(f"""
-                <div style='background-color:#2b313e;padding:10px 15px;border-radius:12px;
-                margin:8px 0;text-align:left;color:#e2e2e2;'>
-                🤖 <b>HealthBot:</b> {msg['content']}
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(
+                    f"<div style='background-color:#2b313e;padding:10px 15px;border-radius:12px;"
+                    f"margin:8px 0;text-align:left;color:#e2e2e2;'>"
+                    f"🤖 <b>HealthBot:</b> {msg['content']}"
+                    f"</div>",
+                    unsafe_allow_html=True
+                )
+
 
     st.markdown("---")
 
@@ -258,5 +261,6 @@ if selected == 'HealthBot Assistant':
         st.button("Send", use_container_width=True, on_click=handle_send)
     with col2:
         st.button("🧹 Clear Chat", use_container_width=True, on_click=clear_chat)
+
 
 
