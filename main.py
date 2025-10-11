@@ -187,7 +187,10 @@ if selected == 'HealthBot Assistant':
                 """, unsafe_allow_html=True)
 
     # --- Input Box ---
+    # --- Input Box ---
     st.markdown("---")
+    
+    # Create a temporary variable to store user input safely
     user_input = st.text_area(
         "💬 Type your message:",
         key="chat_input",
@@ -195,11 +198,11 @@ if selected == 'HealthBot Assistant':
         placeholder="Enter your question here..."
     )
     send_btn = st.button("Send", use_container_width=True)
-
+    
     # --- When user sends message ---
     if send_btn and user_input.strip():
         st.session_state.chat_history.append({"role": "user", "content": user_input})
-
+    
         # SYSTEM PROMPT
         system_prompt = (
             "You are a professional, friendly AI health assistant. "
@@ -208,15 +211,14 @@ if selected == 'HealthBot Assistant':
             "Never give prescriptions or medical diagnoses. "
             "If something sounds serious, advise seeing a doctor."
         )
-
+    
         # --- Add latest prediction context (column names + values) ---
         last_pred = st.session_state.get('last_prediction', None)
         user_context = ""
         if last_pred:
             disease = last_pred['disease']
             values = last_pred['input']
-
-            # attach column names for each model
+    
             if disease == "Diabetes":
                 columns = [
                     "Pregnancies", "Glucose", "BloodPressure", "SkinThickness",
@@ -232,21 +234,21 @@ if selected == 'HealthBot Assistant':
                 columns = [f"Feature_{i}" for i in range(1, 23)]
             else:
                 columns = []
-
+    
             input_with_names = "\n".join(
                 [f"{c}: {v}" for c, v in zip(columns, values)]
             )
-
+    
             user_context = (
                 f"\n\nUser recently tested for {disease}.\n"
                 f"Input details:\n{input_with_names}\n"
                 f"Prediction result: {last_pred['result']}\n"
                 "Provide advice or lifestyle recommendations based on this data."
             )
-
+    
         full_prompt = f"{system_prompt}\n{user_context}\n\nUser Question: {user_input}"
         reply = ""
-
+    
         # --- Try OpenAI ---
         if use_openai:
             try:
@@ -262,7 +264,7 @@ if selected == 'HealthBot Assistant':
                     use_openai = False
                 else:
                     reply = f"Error generating reply: {e}"
-
+    
         # --- Gemini Fallback ---
         if not use_openai and use_gemini:
             try:
@@ -271,11 +273,10 @@ if selected == 'HealthBot Assistant':
                 reply = gemini_response.text
             except Exception as ge:
                 reply = f"Gemini API error: {ge}"
-
+    
         st.session_state.chat_history.append({"role": "assistant", "content": reply})
+    
+        # 🧹 Reset chat input properly before rerun
+        st.session_state["chat_input"] = ""
+        st.experimental_rerun()
 
-        # 🧹 Reset input box after sending
-        st.session_state.chat_input = ""
-
-        # Rerun to refresh UI
-        st.rerun()
