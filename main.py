@@ -131,71 +131,66 @@ if selected == 'Parkinson’s Prediction':
 # ---------------------------------------------------------
 # 8️⃣ HealthBot Assistant (ChatGPT-like UI)
 # ---------------------------------------------------------
-if selected == 'HealthBot Assistant':
-    st.title("AI HealthBot Assistant")
+# ---------------------------------------------------------
+# 8️⃣ HealthBot Assistant (Gemini-only, ChatGPT-style layout)
+# ---------------------------------------------------------
+if selected == '🤖 HealthBot Assistant':
+    st.title("🤖 AI HealthBot Assistant")
 
-    # --- API Initialization ---
-    use_openai = False
-    client = None
-    try:
-        client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-        use_openai = True
-    except Exception:
-        st.warning("OpenAI key missing or invalid. Will use Gemini fallback.")
+    import google.generativeai as genai
 
+    # ✅ Configure Gemini
     try:
         genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-        use_gemini = True
-    except Exception:
-        use_gemini = False
-        if not use_openai:
-            st.error("No OpenAI or Gemini API key found. Cannot generate replies.")
-            st.stop()
+        gemini_model = genai.GenerativeModel("gemini-2.5-flash-lite")
+    except Exception as e:
+        st.error("⚠️ Gemini API key missing or invalid. Cannot start chatbot.")
+        st.stop()
 
-    # --- Chat Memory ---
+    # ✅ Initialize chat history
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
 
-    # --- Chat Containers ---
+    # ✅ Chat message display (oldest → newest)
     chat_container = st.container()
     input_container = st.container()
 
-    # --- Display Messages (Chat Bubbles) ---
     with chat_container:
         for msg in st.session_state.chat_history:
             if msg["role"] == "user":
                 st.markdown(f"""
-                <div style='background-color:#1e1e1e;padding:10px 15px;border-radius:12px;
-                margin:8px 0;text-align:right;color:#fff;'>
-                🧑 <b>You:</b> {msg['content']}
+                <div style='background-color:#2e2e2e;border-radius:12px;padding:10px;margin:6px 0;text-align:left;'>
+                    <b>🧑 You:</b> {msg["content"]}
                 </div>
                 """, unsafe_allow_html=True)
             else:
                 st.markdown(f"""
-                <div style='background-color:#2b313e;padding:10px 15px;border-radius:12px;
-                margin:8px 0;text-align:left;color:#e2e2e2;'>
-                🤖 <b>HealthBot:</b> {msg['content']}
+                <div style='background-color:#1a3d5d;border-radius:12px;padding:10px;margin:6px 0;text-align:left;'>
+                    <b>🤖 HealthBot:</b> {msg["content"]}
                 </div>
                 """, unsafe_allow_html=True)
 
-    # --- Input Area at Bottom ---
+    # ✅ Sticky bottom input
     with input_container:
         st.markdown("---")
-        user_input = st.text_area("💬 Type your message:", key="chat_input", height=80, placeholder="Ask about health, diet, or exercise...")
+        user_input = st.text_area("💬 Type your message:", key="chat_input", height=80, placeholder="Ask about health, fitness, nutrition, or wellness...")
         send_btn = st.button("Send", use_container_width=True)
 
     if send_btn and user_input.strip():
+        # Add user message
         st.session_state.chat_history.append({"role": "user", "content": user_input})
 
+        # Context and system prompt
         system_prompt = (
-            "You are a professional, friendly AI health assistant. "
-            "Provide general health guidance and wellness information. "
-            "Focus on lifestyle, diet, exercise, and safety precautions. "
-            "Never give prescriptions or medical diagnoses. "
+            "You are a professional, friendly AI health assistant named HealthBot. "
+            "Your job is to give safe, general health and wellness guidance. "
+            "You can explain medical terms, healthy habits, nutrition, and exercise tips. "
+            "Do NOT give prescriptions, diagnoses, or specific treatments. "
             "If something sounds serious, advise seeing a doctor."
         )
 
-        last_pred = st.session_state.get('last_prediction', None)
+        # Include any prediction context if available
+        last_pred = st.session_state.get("last_prediction", None)
         user_context = ""
         if last_pred:
             user_context = (
@@ -204,38 +199,23 @@ if selected == 'HealthBot Assistant':
                 f"Prediction result: {last_pred['result']}"
             )
 
+        # Full prompt
         full_prompt = system_prompt + user_context + "\n\nUser Question: " + user_input
-        reply = ""
 
-        # --- Try OpenAI ---
-        if use_openai:
-            try:
-                response = client.chat.completions.create(
-                    model="gpt-3.5-turbo",
-                    messages=[{"role": "user", "content": full_prompt}],
-                    max_tokens=300,
-                    temperature=0.7,
-                )
-                reply = response.choices[0].message.content
-            except Exception as e:
-                if "insufficient_quota" in str(e) or "429" in str(e):
-                    use_openai = False
-                else:
-                    reply = f"Error generating reply: {e}"
+        # ✅ Gemini response
+        try:
+            gemini_response = gemini_model.generate_content(full_prompt)
+            reply = gemini_response.text
+        except Exception as ge:
+            reply = f"⚠️ Gemini API error: {ge}"
 
-        # --- Gemini Fallback ---
-        if not use_openai and use_gemini:
-            try:
-                gemini_model = genai.GenerativeModel("gemini-2.5-flash-lite")
-                gemini_response = gemini_model.generate_content(full_prompt)
-                reply = gemini_response.text
-            except Exception as ge:
-                reply = f"Gemini API error: {ge}"
-
+        # Add bot reply
         st.session_state.chat_history.append({"role": "assistant", "content": reply})
 
-        # Refresh UI and scroll to bottom
+        # ✅ Auto refresh to show latest message
         st.rerun()
+
+
 
 
 
