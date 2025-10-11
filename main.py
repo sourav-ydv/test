@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-Multi-Disease Prediction System + Smart Gemini HealthBot
-Author: Sourav Yadav
+Multi-Disease Prediction System + Smart HealthBot (ChatGPT-style)
+OpenAI (primary) + Gemini fallback (gemini-2.5-flash-lite)
 """
 
 import pickle
 import streamlit as st
 from streamlit_option_menu import option_menu
+from openai import OpenAI
 import google.generativeai as genai
 
 # ---------------------------------------------------------
@@ -26,268 +27,212 @@ st.set_page_config(page_title="Multi-Disease Prediction System", layout="wide")
 # ---------------------------------------------------------
 with st.sidebar:
     selected = option_menu(
-        '🧬 Disease Prediction System',
-        ['🏠 Home', '💉 Diabetes Prediction', '❤️ Heart Disease Prediction',
-         '🧠 Parkinson’s Prediction', '🤖 HealthBot Assistant'],
-        icons=['house', 'activity', 'heart', 'brain', 'robot'],
+        'Disease Prediction System',
+        ['Diabetes Prediction', 'Heart Disease Prediction',
+         'Parkinson’s Prediction', 'HealthBot Assistant'],
+        icons=['activity', 'heart', 'brain', 'robot'],
         default_index=0
     )
 
 # ---------------------------------------------------------
-# 4️⃣ Home Page
-# ---------------------------------------------------------
-if selected == '🏠 Home':
-    st.title("🏥 Multi-Disease Prediction & Health Assistant")
-    st.write("""
-    Welcome to the **AI-Powered Health Prediction System**!  
-    This app can:
-    - Predict your risk for **Diabetes**, **Heart Disease**, and **Parkinson’s Disease**  
-    - Chat with a built-in **Health Assistant** powered by **Gemini AI**  
-
-    ⚠️ *Disclaimer:* This app is for educational and informational purposes only — not medical advice.
-    """)
-
-# ---------------------------------------------------------
 # 5️⃣ Diabetes Prediction
 # ---------------------------------------------------------
-if selected == '💉 Diabetes Prediction':
-    st.title("💉 Diabetes Prediction using ML")
+if selected == 'Diabetes Prediction':
+    st.title("Diabetes Prediction using ML")
 
-    col1, col2 = st.columns(2)
-    with col1:
-        Pregnancies = st.number_input("Pregnancies", 0)
-        Glucose = st.number_input("Glucose Level", 0)
-        BloodPressure = st.number_input("Blood Pressure", 0)
-        SkinThickness = st.number_input("Skin Thickness", 0)
-    with col2:
-        Insulin = st.number_input("Insulin Level", 0)
-        BMI = st.number_input("BMI", 0.0)
-        DiabetesPedigreeFunction = st.number_input("Diabetes Pedigree Function", 0.0)
-        Age = st.number_input("Age", 0)
+    Pregnancies = st.number_input("Pregnancies", 0)
+    Glucose = st.number_input("Glucose Level", 0)
+    BloodPressure = st.number_input("Blood Pressure value", 0)
+    SkinThickness = st.number_input("Skin Thickness value", 0)
+    Insulin = st.number_input("Insulin Level", 0)
+    BMI = st.number_input("BMI value", 0.0)
+    DiabetesPedigreeFunction = st.number_input("Diabetes Pedigree Function value", 0.0)
+    Age = st.number_input("Age", 0)
 
-    if st.button('🔍 Diabetes Test Result'):
-        user_input_d = {
-            "Pregnancies": Pregnancies,
-            "Glucose": Glucose,
-            "Blood Pressure": BloodPressure,
-            "Skin Thickness": SkinThickness,
-            "Insulin": Insulin,
-            "BMI": BMI,
-            "DiabetesPedigreeFunction": DiabetesPedigreeFunction,
-            "Age": Age
-        }
-
-        diab_prediction = diabetes_model.predict([list(user_input_d.values())])
+    if st.button('Diabetes Test Result'):
+        user_input_d = [Pregnancies, Glucose, BloodPressure, SkinThickness, Insulin, BMI, DiabetesPedigreeFunction, Age]
+        diab_prediction = diabetes_model.predict([user_input_d])
         if diab_prediction[0] == 1:
-            st.error('⚠️ The person is likely to have diabetes.')
+            st.error('The person is likely to have diabetes.')
             diab_status = 'likely to have diabetes'
         else:
-            st.success('✅ The person is not diabetic.')
+            st.success('The person is not diabetic.')
             diab_status = 'not diabetic'
-
-        st.session_state.last_prediction = {
-            "disease": "Diabetes",
-            "input": user_input_d,
-            "result": diab_status
+        st.session_state['last_prediction'] = {
+            'disease': 'Diabetes',
+            'input': user_input_d,
+            'result': diab_status
         }
 
 # ---------------------------------------------------------
 # 6️⃣ Heart Disease Prediction
 # ---------------------------------------------------------
-if selected == '❤️ Heart Disease Prediction':
-    st.title("❤️ Heart Disease Prediction using ML")
+if selected == 'Heart Disease Prediction':
+    st.title("Heart Disease Prediction using ML")
 
     col1, col2, col3 = st.columns(3)
     with col1:
         age = st.number_input('Age', 0)
         sex = st.selectbox('Sex (1=Male, 0=Female)', [0, 1])
-        cp = st.number_input('Chest Pain Type', 0)
+        cp = st.number_input('Chest Pain types', 0)
         trestbps = st.number_input('Resting Blood Pressure', 0)
     with col2:
-        chol = st.number_input('Cholesterol (mg/dl)', 0)
-        fbs = st.selectbox('Fasting Blood Sugar > 120 mg/dl', [0, 1])
-        restecg = st.number_input('Rest ECG Result', 0)
-        thalach = st.number_input('Max Heart Rate', 0)
+        chol = st.number_input('Serum Cholestoral in mg/dl', 0)
+        fbs = st.selectbox('Fasting Blood Sugar > 120 mg/dl (1=True, 0=False)', [0, 1])
+        restecg = st.number_input('Resting Electrocardiographic results', 0)
+        thalach = st.number_input('Maximum Heart Rate achieved', 0)
     with col3:
-        exang = st.selectbox('Exercise Induced Angina', [0, 1])
-        oldpeak = st.number_input('ST Depression', 0.0)
-        slope = st.number_input('Slope of ST Segment', 0)
-        ca = st.number_input('No. of Major Vessels', 0)
-        thal = st.number_input('Thal (0=Normal,1=Fixed Defect,2=Reversible Defect)', 0)
+        exang = st.selectbox('Exercise Induced Angina (1=True, 0=False)', [0, 1])
+        oldpeak = st.number_input('ST depression induced by exercise', 0.0)
+        slope = st.number_input('Slope of the peak exercise ST segment', 0)
+        ca = st.number_input('Major vessels colored by fluoroscopy', 0)
+        thal = st.number_input('thal (0=Normal, 1=Fixed defect, 2=Reversable defect)', 0)
 
-    if st.button('🔍 Heart Disease Test Result'):
-        user_input_h = {
-            "Age": age, "Sex": sex, "Chest Pain Type": cp, "Resting BP": trestbps,
-            "Cholesterol": chol, "Fasting Sugar": fbs, "Rest ECG": restecg,
-            "Max Heart Rate": thalach, "Exercise Angina": exang, "Oldpeak": oldpeak,
-            "Slope": slope, "Major Vessels": ca, "Thal": thal
-        }
-
-        heart_prediction = heart_model.predict([list(user_input_h.values())])
+    if st.button('Heart Disease Test Result'):
+        user_input_h = [age, sex, cp, trestbps, chol, fbs, restecg, thalach, exang, oldpeak, slope, ca, thal]
+        heart_prediction = heart_model.predict([user_input_h])
         if heart_prediction[0] == 1:
-            st.error('💔 The person is likely to have heart disease.')
+            st.error('The person is likely to have heart disease.')
             heart_status = 'likely to have heart disease'
         else:
-            st.success('❤️ The person does not have heart disease.')
-            heart_status = 'does not have heart disease'
-
-        st.session_state.last_prediction = {
-            "disease": "Heart Disease",
-            "input": user_input_h,
-            "result": heart_status
+            st.success('The person does not have any heart disease.')
+            heart_status = 'does not have any heart disease'
+        st.session_state['last_prediction'] = {
+            'disease': 'Heart Disease',
+            'input': user_input_h,
+            'result': heart_status
         }
 
 # ---------------------------------------------------------
 # 7️⃣ Parkinson’s Prediction
 # ---------------------------------------------------------
-if selected == '🧠 Parkinson’s Prediction':
-    st.title("🧠 Parkinson’s Disease Prediction using ML")
+if selected == 'Parkinson’s Prediction':
+    st.title("Parkinson’s Disease Prediction using ML")
 
-    inputs = {}
+    inputs = []
     for i in range(1, 23):
-        inputs[f'Feature {i}'] = st.number_input(f'Feature {i}', 0.0)
+        inputs.append(st.number_input(f'Feature {i}', 0.0))
 
-    if st.button('🔍 Parkinson’s Test Result'):
-        park_prediction = parkinsons_model.predict([list(inputs.values())])
+    if st.button('Parkinson’s Test Result'):
+        user_input_p = inputs
+        park_prediction = parkinsons_model.predict([user_input_p])
         if park_prediction[0] == 1:
-            st.error('⚠️ The person likely has Parkinson’s Disease.')
+            st.error('The person likely has Parkinson’s Disease.')
             park_status = 'likely to have Parkinson’s Disease'
         else:
-            st.success('✅ The person is healthy.')
+            st.success('The person is healthy.')
             park_status = 'does not have Parkinson’s Disease'
-
-        st.session_state.last_prediction = {
-            "disease": "Parkinson’s Disease",
-            "input": inputs,
-            "result": park_status
+        st.session_state['last_prediction'] = {
+            'disease': 'Parkinson’s Disease',
+            'input': user_input_p,
+            'result': park_status
         }
 
 # ---------------------------------------------------------
-# 8️⃣ HealthBot Assistant (Gemini-only)
+# 8️⃣ HealthBot Assistant (ChatGPT-like UI)
 # ---------------------------------------------------------
-if selected == '🤖 HealthBot Assistant':
-    # 🎨 Styling
-    st.markdown("""
-        <style>
-        .main {
-            background-color: #0e1117;
-            color: #e8e8e8;
-        }
-        .chat-container {
-            background-color: #0e1117;
-            padding: 15px;
-            border-radius: 12px;
-            min-height: 400px;
-        }
-        .user-msg {
-            background-color: #1f2937;
-            color: #ffffff;
-            border-radius: 18px;
-            padding: 10px 15px;
-            margin: 8px 0;
-            width: fit-content;
-            max-width: 80%;
-            align-self: flex-end;
-        }
-        .bot-msg {
-            background-color: #1e3a5f;
-            color: #e0f7fa;
-            border-radius: 18px;
-            padding: 10px 15px;
-            margin: 8px 0;
-            width: fit-content;
-            max-width: 80%;
-            align-self: flex-start;
-        }
-        textarea {
-            background-color: #1f2937 !important;
-            color: #ffffff !important;
-            border-radius: 10px !important;
-            border: 1px solid #374151 !important;
-        }
-        div.stButton > button {
-            background-color: #007acc;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            padding: 8px 16px;
-            font-weight: bold;
-        }
-        div.stButton > button:hover {
-            background-color: #005f99;
-            color: white;
-        }
-        </style>
-    """, unsafe_allow_html=True)
+if selected == 'HealthBot Assistant':
+    st.title("AI HealthBot Assistant")
 
-    st.title("🤖 AI HealthBot Assistant")
+    # --- API Initialization ---
+    use_openai = False
+    client = None
+    try:
+        client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+        use_openai = True
+    except Exception:
+        st.warning("OpenAI key missing or invalid. Will use Gemini fallback.")
 
-    # Configure Gemini
     try:
         genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-        gemini_model = genai.GenerativeModel("gemini-2.5-flash-lite")
-    except Exception as e:
-        st.error("⚠️ Gemini API key missing or invalid. Cannot start chatbot.")
-        st.stop()
+        use_gemini = True
+    except Exception:
+        use_gemini = False
+        if not use_openai:
+            st.error("No OpenAI or Gemini API key found. Cannot generate replies.")
+            st.stop()
 
+    # --- Chat Memory ---
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
 
-    # Display chat history
-    st.markdown("<div class='chat-container'>", unsafe_allow_html=True)
-    if st.session_state.chat_history:
+    # --- Chat Containers ---
+    chat_container = st.container()
+    input_container = st.container()
+
+    # --- Display Messages (Chat Bubbles) ---
+    with chat_container:
         for msg in st.session_state.chat_history:
             if msg["role"] == "user":
-                st.markdown(f"<div class='user-msg'><b>🧑 You:</b> {msg['content']}</div>", unsafe_allow_html=True)
+                st.markdown(f"""
+                <div style='background-color:#1e1e1e;padding:10px 15px;border-radius:12px;
+                margin:8px 0;text-align:right;color:#fff;'>
+                🧑 <b>You:</b> {msg['content']}
+                </div>
+                """, unsafe_allow_html=True)
             else:
-                st.markdown(f"<div class='bot-msg'><b>🤖 HealthBot:</b> {msg['content']}</div>", unsafe_allow_html=True)
-    else:
-        st.markdown("<p style='color: gray; text-align:center;'>Start chatting below 👇</p>", unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+                st.markdown(f"""
+                <div style='background-color:#2b313e;padding:10px 15px;border-radius:12px;
+                margin:8px 0;text-align:left;color:#e2e2e2;'>
+                🤖 <b>HealthBot:</b> {msg['content']}
+                </div>
+                """, unsafe_allow_html=True)
 
-    # Input
-    st.markdown("---")
-    user_input = st.text_area("💬 Type your message:", key="chat_input", height=80,
-                              placeholder="Ask about your prediction results or general health advice...")
-    send_btn = st.button("Send", use_container_width=True)
+    # --- Input Area at Bottom ---
+    with input_container:
+        st.markdown("---")
+        user_input = st.text_area("💬 Type your message:", key="chat_input", height=80)
+        send_btn = st.button("Send", use_container_width=True)
 
-    # Send
     if send_btn and user_input.strip():
         st.session_state.chat_history.append({"role": "user", "content": user_input})
 
         system_prompt = (
-            "You are HealthBot, a friendly and knowledgeable AI health assistant. "
-            "You provide general wellness and prevention advice based on prediction data. "
-            "Do not provide diagnosis or treatment. If something sounds serious, advise seeing a doctor."
+            "You are a professional, friendly AI health assistant. "
+            "Provide general health guidance and wellness information. "
+            "Focus on lifestyle, diet, exercise, and safety precautions. "
+            "Never give prescriptions or medical diagnoses. "
+            "If something sounds serious, advise seeing a doctor."
         )
 
-        context = ""
-        last_pred = st.session_state.get("last_prediction", None)
+        last_pred = st.session_state.get('last_prediction', None)
+        user_context = ""
         if last_pred:
-            disease = last_pred.get("disease", "Unknown")
-            result = last_pred.get("result", "Unknown")
-            inputs = last_pred.get("input", {})
-            formatted_inputs = "\n".join([f"- {k}: {v}" for k, v in inputs.items()])
-            context = (
-                f"\n\n📊 **Prediction Context:**\n"
-                f"Disease: {disease}\n"
-                f"Result: {result}\n"
-                f"User Input Data:\n{formatted_inputs}\n"
+            user_context = (
+                f"\n\nUser recently tested for {last_pred['disease']}.\n"
+                f"Input data: {last_pred['input']}\n"
+                f"Prediction result: {last_pred['result']}"
             )
 
-        prompt = f"{system_prompt}{context}\n\nUser Question: {user_input}"
+        full_prompt = system_prompt + user_context + "\n\nUser Question: " + user_input
+        reply = ""
 
-        try:
-            response = gemini_model.generate_content(prompt)
-            reply = response.text.strip()
-        except Exception as e:
-            reply = f"⚠️ Gemini API error: {e}"
+        # --- Try OpenAI ---
+        if use_openai:
+            try:
+                response = client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[{"role": "user", "content": full_prompt}],
+                    max_tokens=300,
+                    temperature=0.7,
+                )
+                reply = response.choices[0].message.content
+            except Exception as e:
+                if "insufficient_quota" in str(e) or "429" in str(e):
+                    use_openai = False
+                else:
+                    reply = f"Error generating reply: {e}"
+
+        # --- Gemini Fallback ---
+        if not use_openai and use_gemini:
+            try:
+                gemini_model = genai.GenerativeModel("gemini-2.5-flash-lite")
+                gemini_response = gemini_model.generate_content(full_prompt)
+                reply = gemini_response.text
+            except Exception as ge:
+                reply = f"Gemini API error: {ge}"
 
         st.session_state.chat_history.append({"role": "assistant", "content": reply})
-        st.rerun()
 
-# ---------------------------------------------------------
-# 9️⃣ Footer
-# ---------------------------------------------------------
-st.markdown("---")
-st.caption("⚕️ Powered by Gemini AI & ML Models — Not a substitute for professional medical advice.")
+        # Refresh UI and scroll to bottom
+        st.rerun()
