@@ -134,10 +134,66 @@ if selected == 'Parkinson’s Prediction':
 # ---------------------------------------------------------
 # 8️⃣ HealthBot Assistant (Gemini-only, ChatGPT-style layout)
 # ---------------------------------------------------------
+# ---------------------------------------------------------
+# 8️⃣ HealthBot Assistant (Gemini-only, ChatGPT Dark UI)
+# ---------------------------------------------------------
 if selected == '🤖 HealthBot Assistant':
-    st.title("🤖 AI HealthBot Assistant")
-
     import google.generativeai as genai
+
+    st.markdown("""
+        <style>
+        /* Overall background and layout */
+        .main {
+            background-color: #121212;
+            color: #e6e6e6;
+        }
+
+        /* Chat bubbles */
+        .user-msg {
+            background-color: #2e2e2e;
+            color: #ffffff;
+            border-radius: 15px;
+            padding: 10px 15px;
+            margin: 8px 0;
+            width: fit-content;
+            max-width: 80%;
+        }
+
+        .bot-msg {
+            background-color: #1a3d5d;
+            color: #e0f7fa;
+            border-radius: 15px;
+            padding: 10px 15px;
+            margin: 8px 0;
+            width: fit-content;
+            max-width: 80%;
+        }
+
+        /* Input box styling */
+        textarea {
+            background-color: #1e1e1e !important;
+            color: #ffffff !important;
+            border-radius: 10px !important;
+            border: 1px solid #333 !important;
+        }
+
+        /* Send button */
+        div.stButton > button {
+            background-color: #007acc;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 8px 16px;
+            font-weight: bold;
+        }
+        div.stButton > button:hover {
+            background-color: #005f99;
+            color: white;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    st.title("🤖 AI HealthBot Assistant")
 
     # ✅ Configure Gemini
     try:
@@ -147,49 +203,49 @@ if selected == '🤖 HealthBot Assistant':
         st.error("⚠️ Gemini API key missing or invalid. Cannot start chatbot.")
         st.stop()
 
-    # ✅ Initialize chat history
+    # ✅ Initialize chat memory
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
 
-    # ✅ Chat message display (oldest → newest)
+    # ✅ Display messages (ChatGPT-like)
     chat_container = st.container()
     input_container = st.container()
 
     with chat_container:
         for msg in st.session_state.chat_history:
             if msg["role"] == "user":
-                st.markdown(f"""
-                <div style='background-color:#2e2e2e;border-radius:12px;padding:10px;margin:6px 0;text-align:left;'>
-                    <b>🧑 You:</b> {msg["content"]}
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(
+                    f"<div class='user-msg'><b>🧑 You:</b> {msg['content']}</div>",
+                    unsafe_allow_html=True
+                )
             else:
-                st.markdown(f"""
-                <div style='background-color:#1a3d5d;border-radius:12px;padding:10px;margin:6px 0;text-align:left;'>
-                    <b>🤖 HealthBot:</b> {msg["content"]}
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(
+                    f"<div class='bot-msg'><b>🤖 HealthBot:</b> {msg['content']}</div>",
+                    unsafe_allow_html=True
+                )
 
-    # ✅ Sticky bottom input
+    # ✅ Input at bottom
     with input_container:
         st.markdown("---")
-        user_input = st.text_area("💬 Type your message:", key="chat_input", height=80, placeholder="Ask about health, fitness, nutrition, or wellness...")
+        user_input = st.text_area(
+            "💬 Type your message:",
+            key="chat_input",
+            height=80,
+            placeholder="Ask about health, fitness, or nutrition..."
+        )
         send_btn = st.button("Send", use_container_width=True)
 
+    # ✅ Handle sending
     if send_btn and user_input.strip():
-        # Add user message
         st.session_state.chat_history.append({"role": "user", "content": user_input})
 
-        # Context and system prompt
         system_prompt = (
             "You are a professional, friendly AI health assistant named HealthBot. "
-            "Your job is to give safe, general health and wellness guidance. "
-            "You can explain medical terms, healthy habits, nutrition, and exercise tips. "
-            "Do NOT give prescriptions, diagnoses, or specific treatments. "
-            "If something sounds serious, advise seeing a doctor."
+            "You give safe, general health, wellness, and nutrition guidance. "
+            "Never provide prescriptions, medical diagnoses, or treatments. "
+            "If the issue sounds serious, advise the user to see a doctor."
         )
 
-        # Include any prediction context if available
         last_pred = st.session_state.get("last_prediction", None)
         user_context = ""
         if last_pred:
@@ -199,20 +255,15 @@ if selected == '🤖 HealthBot Assistant':
                 f"Prediction result: {last_pred['result']}"
             )
 
-        # Full prompt
         full_prompt = system_prompt + user_context + "\n\nUser Question: " + user_input
 
-        # ✅ Gemini response
         try:
             gemini_response = gemini_model.generate_content(full_prompt)
             reply = gemini_response.text
         except Exception as ge:
             reply = f"⚠️ Gemini API error: {ge}"
 
-        # Add bot reply
         st.session_state.chat_history.append({"role": "assistant", "content": reply})
-
-        # ✅ Auto refresh to show latest message
         st.rerun()
 
 
