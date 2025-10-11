@@ -1,3 +1,142 @@
+# -*- coding: utf-8 -*-
+"""
+Multi-Disease Prediction System + Smart HealthBot (ChatGPT-style)
+OpenAI (primary) + Gemini fallback (gemini-2.5-flash-lite)
+"""
+
+import pickle
+import streamlit as st
+from streamlit_option_menu import option_menu
+from openai import OpenAI
+import google.generativeai as genai
+
+# ---------------------------------------------------------
+# 1️⃣ Load ML Models
+# ---------------------------------------------------------
+diabetes_model = pickle.load(open('diabetes_model.sav', 'rb'))
+heart_model = pickle.load(open('heart_disease_model.sav', 'rb'))
+parkinsons_model = pickle.load(open('parkinsons_model.sav', 'rb'))
+
+# ---------------------------------------------------------
+# 2️⃣ Streamlit Page Config
+# ---------------------------------------------------------
+st.set_page_config(page_title="Multi-Disease Prediction System", layout="wide")
+
+# ---------------------------------------------------------
+# 3️⃣ Sidebar Menu
+# ---------------------------------------------------------
+with st.sidebar:
+    selected = option_menu(
+        'Disease Prediction System',
+        ['Diabetes Prediction', 'Heart Disease Prediction',
+         'Parkinson’s Prediction', 'HealthBot Assistant'],
+        icons=['activity', 'heart', 'brain', 'robot'],
+        default_index=0
+    )
+
+# ---------------------------------------------------------
+# 5️⃣ Diabetes Prediction
+# ---------------------------------------------------------
+if selected == 'Diabetes Prediction':
+    st.title("Diabetes Prediction using ML")
+
+    Pregnancies = st.text_input("Pregnancies")
+    Glucose = st.text_input("Glucose Level")
+    BloodPressure = st.text_input("Blood Pressure value")
+    SkinThickness = st.text_input("Skin Thickness value")
+    Insulin = st.text_input("Insulin Level")
+    BMI = st.text_input("BMI value")
+    DiabetesPedigreeFunction = st.text_input("Diabetes Pedigree Function value")
+    Age = st.text_input("Age")
+
+    if st.button('Diabetes Test Result'):
+        user_input_d = [int(Pregnancies), int(Glucose), int(BloodPressure),
+                      int(SkinThickness), int(Insulin), float(BMI),
+                      float(DiabetesPedigreeFunction), int(Age)]
+        diab_prediction = diabetes_model.predict([user_input_d])
+        if diab_prediction[0] == 1:
+            st.error('The person is likely to have diabetes.')
+            diab_status = 'likely to have diabetes'
+        else:
+            st.success('The person is not diabetic.')
+            diab_status = 'not diabetic'
+        st.session_state['last_prediction'] = {
+            'disease': 'Diabetes',
+            'input': user_input_d,
+            'result': diab_status
+        }
+
+# ---------------------------------------------------------
+# 6️⃣ Heart Disease Prediction
+# ---------------------------------------------------------
+if selected == 'Heart Disease Prediction':
+    st.title("Heart Disease Prediction using ML")
+
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        age = st.text_input('Age')
+        sex = st.text_input('Sex (1=Male, 0=Female)')
+        cp = st.text_input('Chest Pain types')
+        trestbps = st.text_input('Resting Blood Pressure')
+    with col2:
+        chol = st.text_input('Serum Cholestoral in mg/dl')
+        fbs = st.text_input('Fasting Blood Sugar > 120 mg/dl (1=True, 0=False)')
+        restecg = st.text_input('Resting Electrocardiographic results')
+        thalach = st.text_input('Maximum Heart Rate achieved')
+    with col3:
+        exang = st.text_input('Exercise Induced Angina (1=True, 0=False)')
+        oldpeak = st.text_input('ST depression induced by exercise')
+        slope = st.text_input('Slope of the peak exercise ST segment')
+        ca = st.text_input('Major vessels colored by fluoroscopy')
+        thal = st.text_input('thal (0=Normal, 1=Fixed defect, 2=Reversable defect)')
+
+    if st.button('Heart Disease Test Result'):
+        user_input_h = [
+            int(age), int(sex), int(cp), int(trestbps), int(chol),
+            int(fbs), int(restecg), int(thalach), int(exang),
+            float(oldpeak), int(slope), int(ca), int(thal)
+        ]
+        heart_prediction = heart_model.predict([user_input_h])
+        if heart_prediction[0] == 1:
+            st.error('The person is likely to have heart disease.')
+            heart_status = 'likely to have heart disease'
+        else:
+            st.success('The person does not have any heart disease.')
+            heart_status = 'does not have any heart disease'
+        st.session_state['last_prediction'] = {
+            'disease': 'Heart Disease',
+            'input': user_input_h,
+            'result': heart_status
+        }
+
+# ---------------------------------------------------------
+# 7️⃣ Parkinson’s Prediction
+# ---------------------------------------------------------
+if selected == 'Parkinson’s Prediction':
+    st.title("Parkinson’s Disease Prediction using ML")
+
+    inputs = []
+    for i in range(1, 23):
+        inputs.append(st.number_input(f'Feature {i}', 0.0))
+
+    if st.button('Parkinson’s Test Result'):
+        user_input_p = inputs
+        park_prediction = parkinsons_model.predict([user_input_p])
+        if park_prediction[0] == 1:
+            st.error('The person likely has Parkinson’s Disease.')
+            park_status = 'likely to have Parkinson’s Disease'
+        else:
+            st.success('The person is healthy.')
+            park_status = 'does not have Parkinson’s Disease'
+        st.session_state['last_prediction'] = {
+            'disease': 'Parkinson’s Disease',
+            'input': user_input_p,
+            'result': park_status
+        }
+
+# ---------------------------------------------------------
+# 8️⃣ HealthBot Assistant (ChatGPT-like UI)
+# ---------------------------------------------------------
 # ---------------------------------------------------------
 # 8️⃣ HealthBot Assistant (ChatGPT-like UI with Context)
 # ---------------------------------------------------------
