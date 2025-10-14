@@ -161,7 +161,7 @@ if selected == 'Parkinson’s Prediction':
         }
 
 # ---------------------------------------------------------
-# 8️⃣ HealthBot Assistant (Gemini-Only Chatbot)
+# 8️⃣ HealthBot Assistant (Gemini-Only Chatbot with fixed input box)
 # ---------------------------------------------------------
 if selected == 'HealthBot Assistant':
     st.title("🤖 AI HealthBot Assistant")
@@ -200,8 +200,6 @@ if selected == 'HealthBot Assistant':
                     unsafe_allow_html=True
                 )
 
-    st.markdown("---")
-
     # --- Function: Send Message ---
     def handle_send():
         user_text = st.session_state.chat_input.strip()
@@ -237,7 +235,14 @@ if selected == 'HealthBot Assistant':
                     "Oldpeak", "Slope", "CA", "Thal"
                 ]
             elif disease == "Parkinson’s Disease":
-                columns = [f"Feature_{i}" for i in range(1, 23)]
+                columns = [
+                    "MDVP:Fo(Hz)", "MDVP:Fhi(Hz)", "MDVP:Flo(Hz)",
+                    "MDVP:Jitter(%)", "MDVP:Jitter(Abs)", "MDVP:RAP",
+                    "MDVP:PPQ", "Jitter:DDP", "MDVP:Shimmer",
+                    "MDVP:Shimmer(dB)", "Shimmer:APQ3", "Shimmer:APQ5",
+                    "MDVP:APQ", "Shimmer:DDA", "NHR", "HNR", "RPDE",
+                    "D2", "DFA", "Spread1", "Spread2", "PPE"
+                ]
             else:
                 columns = []
 
@@ -265,21 +270,31 @@ if selected == 'HealthBot Assistant':
         # ✅ Clear input safely
         st.session_state.chat_input = ""
 
-    # --- Function: Clear Chat ---
-    def clear_chat():
-        st.session_state.chat_history = []
-        st.session_state.chat_input = ""
-
-    # --- Input Box and Buttons ---
-    st.text_area(
-        "💬 Type your message:",
-        key="chat_input",
-        height=80,
-        placeholder="Ask about diet, fitness, or your health data..."
+    # --- Fixed Input Box at Bottom ---
+    st.markdown(
+        """
+        <style>
+        .fixed-input {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #111;
+            padding: 12px;
+            border-top: 1px solid #333;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
     )
 
-    col1, col2 = st.columns([4, 1])
-    with col1:
-        st.button("Send", use_container_width=True, on_click=handle_send)
-    with col2:
-        st.button("🧹 Clear Chat", use_container_width=True, on_click=clear_chat)
+    with st.container():
+        chat_input = st.text_input(
+            "💬 Type your message...",
+            key="chat_input",
+            placeholder="Ask about diet, fitness, or your health data...",
+            label_visibility="collapsed",
+            on_change=handle_send  # Trigger send on Enter
+        )
+
+
