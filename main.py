@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Multi-Disease Prediction System + Smart HealthBot (ChatGPT-style)
 OpenAI (primary) + Gemini fallback (gemini-2.5-flash-lite)
@@ -67,7 +66,7 @@ if selected == 'Diabetes Prediction':
         }
 
 # ---------------------------------------------------------
-# 6️⃣ Heart Disease Prediction
+# 6️⃣ Heart Disease Prediction (Updated UI with meaningful names)
 # ---------------------------------------------------------
 if selected == 'Heart Disease Prediction':
     st.title("Heart Disease Prediction using ML")
@@ -75,20 +74,20 @@ if selected == 'Heart Disease Prediction':
     col1, col2, col3 = st.columns(3)
     with col1:
         age = st.text_input('Age')
-        sex = st.text_input('Sex (1=Male, 0=Female)')
-        cp = st.text_input('Chest Pain types')
+        sex = st.text_input('Sex (1 = Male, 0 = Female)')
+        cp = st.text_input('Chest Pain Type (0–3)')
         trestbps = st.text_input('Resting Blood Pressure')
     with col2:
-        chol = st.text_input('Serum Cholestoral in mg/dl')
-        fbs = st.text_input('Fasting Blood Sugar > 120 mg/dl (1=True, 0=False)')
-        restecg = st.text_input('Resting Electrocardiographic results')
-        thalach = st.text_input('Maximum Heart Rate achieved')
+        chol = st.text_input('Serum Cholesterol (mg/dl)')
+        fbs = st.text_input('Fasting Blood Sugar > 120 mg/dl (1 = Yes, 0 = No)')
+        restecg = st.text_input('Resting ECG Results (0–2)')
+        thalach = st.text_input('Maximum Heart Rate Achieved')
     with col3:
-        exang = st.text_input('Exercise Induced Angina (1=True, 0=False)')
-        oldpeak = st.text_input('ST depression induced by exercise')
-        slope = st.text_input('Slope of the peak exercise ST segment')
-        ca = st.text_input('Major vessels colored by fluoroscopy')
-        thal = st.text_input('thal (0=Normal, 1=Fixed defect, 2=Reversable defect)')
+        exang = st.text_input('Exercise Induced Angina (1 = Yes, 0 = No)')
+        oldpeak = st.text_input('Oldpeak (ST Depression by Exercise)')
+        slope = st.text_input('Slope of Peak Exercise ST Segment (0–2)')
+        ca = st.text_input('Number of Major Vessels (0–3) Colored by Fluoroscopy')
+        thal = st.text_input('Thalassemia (0 = Normal, 1 = Fixed Defect, 2 = Reversible Defect)')
 
     if st.button('Heart Disease Test Result'):
         user_input_h = [
@@ -110,14 +109,41 @@ if selected == 'Heart Disease Prediction':
         }
 
 # ---------------------------------------------------------
-# 7️⃣ Parkinson’s Prediction
+# 7️⃣ Parkinson’s Prediction (Updated UI with meaningful names)
 # ---------------------------------------------------------
 if selected == 'Parkinson’s Prediction':
     st.title("Parkinson’s Disease Prediction using ML")
 
+    st.markdown("### Enter Voice Measurement Features")
+    parkinsons_features = [
+        "MDVP:Fo(Hz) - Average Vocal Fundamental Frequency",
+        "MDVP:Fhi(Hz) - Maximum Vocal Fundamental Frequency",
+        "MDVP:Flo(Hz) - Minimum Vocal Fundamental Frequency",
+        "MDVP:Jitter(%) - Variation in Fundamental Frequency",
+        "MDVP:Jitter(Abs)",
+        "MDVP:RAP (Relative Average Perturbation)",
+        "MDVP:PPQ (Pitch Perturbation Quotient)",
+        "Jitter:DDP",
+        "MDVP:Shimmer",
+        "MDVP:Shimmer(dB)",
+        "Shimmer:APQ3",
+        "Shimmer:APQ5",
+        "MDVP:APQ",
+        "Shimmer:DDA",
+        "NHR (Noise-to-Harmonics Ratio)",
+        "HNR (Harmonics-to-Noise Ratio)",
+        "RPDE (Recurrence Period Density Entropy)",
+        "D2 (Correlation Dimension)",
+        "DFA (Signal Fractal Scaling Exponent)",
+        "Spread1",
+        "Spread2",
+        "PPE (Pitch Period Entropy)"
+    ]
+
     inputs = []
-    for i in range(1, 23):
-        inputs.append(st.number_input(f'Feature {i}', 0.0))
+    for feature in parkinsons_features:
+        value = st.number_input(feature, 0.0)
+        inputs.append(value)
 
     if st.button('Parkinson’s Test Result'):
         user_input_p = inputs
@@ -134,9 +160,6 @@ if selected == 'Parkinson’s Prediction':
             'result': park_status
         }
 
-# ---------------------------------------------------------
-# 8️⃣ HealthBot Assistant (ChatGPT-like UI)
-# ---------------------------------------------------------
 # ---------------------------------------------------------
 # 8️⃣ HealthBot Assistant (Gemini-Only Chatbot)
 # ---------------------------------------------------------
@@ -176,7 +199,6 @@ if selected == 'HealthBot Assistant':
                     f"</div>",
                     unsafe_allow_html=True
                 )
-
 
     st.markdown("---")
 
@@ -261,7 +283,3 @@ if selected == 'HealthBot Assistant':
         st.button("Send", use_container_width=True, on_click=handle_send)
     with col2:
         st.button("🧹 Clear Chat", use_container_width=True, on_click=clear_chat)
-
-
-
-
