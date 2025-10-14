@@ -135,7 +135,10 @@ if selected == 'Parkinson’s Prediction':
         }
 
 # ---------------------------------------------------------
-# 8️⃣ HealthBot Assistant (Gemini-Only Chatbot with Enter-to-Send)
+# 8️⃣ HealthBot Assistant (ChatGPT-like UI)
+# ---------------------------------------------------------
+# ---------------------------------------------------------
+# 8️⃣ HealthBot Assistant (Gemini-Only Chatbot)
 # ---------------------------------------------------------
 if selected == 'HealthBot Assistant':
     st.title("🤖 AI HealthBot Assistant")
@@ -173,6 +176,9 @@ if selected == 'HealthBot Assistant':
                     f"</div>",
                     unsafe_allow_html=True
                 )
+
+
+    st.markdown("---")
 
     # --- Function: Send Message ---
     def handle_send():
@@ -237,40 +243,25 @@ if selected == 'HealthBot Assistant':
         # ✅ Clear input safely
         st.session_state.chat_input = ""
 
-    # --- Fixed Input Box at Bottom with Enter-to-Send ---
-    st.markdown(
-        """
-        <style>
-        .stTextArea textarea {
-            height: 80px !important;
-        }
-        .fixed-input {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: #111;
-            padding: 12px;
-            border-top: 1px solid #333;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
+    # --- Function: Clear Chat ---
+    def clear_chat():
+        st.session_state.chat_history = []
+        st.session_state.chat_input = ""
+
+    # --- Input Box and Buttons ---
+    st.text_area(
+        "💬 Type your message:",
+        key="chat_input",
+        height=80,
+        placeholder="Ask about diet, fitness, or your health data..."
     )
 
-    with st.container():
-        user_input = st.text_area(
-            "💬 Type your message...",
-            key="chat_input",
-            height=80,
-            placeholder="Ask about diet, fitness, or your health data...",
-            label_visibility="collapsed"
-        )
+    col1, col2 = st.columns([4, 1])
+    with col1:
+        st.button("Send", use_container_width=True, on_click=handle_send)
+    with col2:
+        st.button("🧹 Clear Chat", use_container_width=True, on_click=clear_chat)
 
-        # Detect Enter key press
-        if user_input and st.session_state.chat_input == user_input:
-            handle_send()
 
-    # Optional Clear Chat button
-    st.button("🧹 Clear Chat", use_container_width=True, on_click=lambda: st.session_state.update({"chat_history": [], "chat_input": ""}))
+
 
