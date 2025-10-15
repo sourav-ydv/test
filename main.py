@@ -1,6 +1,6 @@
 """
 Multi-Disease Prediction System + Smart HealthBot (ChatGPT-style)
-With OCR-based Health Report Auto-Redirect + Auto-Fill
+With OCR-based Health Report Auto-Redirect + Auto-Fill + Auto-Reply
 """
 
 import pickle
@@ -188,7 +188,7 @@ if selected == 'Parkinson’s Prediction':
         st.session_state['last_prediction'] = {'disease': 'Parkinson’s Disease','input': inputs,'result': park_status}
 
 # ---------------------------------------------------------
-# 8️⃣ HealthBot Assistant (safe chat input reset)
+# 8️⃣ HealthBot Assistant (auto-reply + safe reset)
 # ---------------------------------------------------------
 if selected == 'HealthBot Assistant':
     st.title("🤖 AI HealthBot Assistant")
@@ -210,7 +210,26 @@ if selected == 'HealthBot Assistant':
     if "chat_input" not in st.session_state:
         st.session_state["chat_input"] = ""
 
-    # Display chat history
+    # 🔄 Auto-start reply if redirected from OCR
+    if st.session_state.get("last_prediction", {}).get("disease") == "General Report":
+        extracted_text = st.session_state["last_prediction"]["result"]
+        if not any(msg["content"] == extracted_text for msg in st.session_state.chat_history):
+            st.session_state.chat_history.append({"role": "user", "content": extracted_text})
+            system_prompt = (
+                "You are a helpful AI health assistant named HealthBot. "
+                "Provide general health, wellness, exercise, and diet information. "
+                "Do not prescribe medicine. Encourage consulting professionals."
+            )
+            full_prompt = f"{system_prompt}\n\nUser Health Report:\n{extracted_text}\n\nGive advice and suggestions."
+            try:
+                gemini_model = genai.GenerativeModel("gemini-2.0-flash-lite-preview")
+                response = gemini_model.generate_content(full_prompt)
+                reply = response.text
+            except Exception as e:
+                reply = f"⚠️ Gemini API error: {e}"
+            st.session_state.chat_history.append({"role": "assistant", "content": reply})
+
+    # Show chat history
     for msg in st.session_state.chat_history:
         if msg["role"] == "user":
             st.markdown(f"<div style='background:#1e1e1e;padding:10px;border-radius:12px;margin:8px 0;text-align:right;color:#fff;'>🧑 <b>You:</b> {msg['content']}</div>", unsafe_allow_html=True)
