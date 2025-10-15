@@ -1,6 +1,6 @@
 """
 Multi-Disease Prediction System + Smart HealthBot (ChatGPT-style)
-OpenAI (primary) + Gemini fallback (gemini-2.5-flash-lite)
+Now with OCR-based Health Report Analysis
 """
 
 import pickle
@@ -8,6 +8,9 @@ import streamlit as st
 from streamlit_option_menu import option_menu
 from openai import OpenAI
 import google.generativeai as genai
+from PIL import Image
+import pytesseract
+import re
 
 # ---------------------------------------------------------
 # 1️⃣ Load ML Models
@@ -28,10 +31,73 @@ with st.sidebar:
     selected = option_menu(
         'Disease Prediction System',
         ['Diabetes Prediction', 'Heart Disease Prediction',
-         'Parkinson’s Prediction', 'HealthBot Assistant'],
-        icons=['activity', 'heart', 'brain', 'robot'],
+         'Parkinson’s Prediction', 'HealthBot Assistant', 'Upload Health Report'],
+        icons=['activity', 'heart', 'brain', 'robot', 'file-earmark-arrow-up'],
         default_index=0
     )
+
+# ---------------------------------------------------------
+# OCR Utility Functions
+# ---------------------------------------------------------
+def extract_text_from_image(uploaded_file):
+    """Run OCR on uploaded image."""
+    image = Image.open(uploaded_file)
+    text = pytesseract.image_to_string(image)
+    return text
+
+def parse_health_report(text):
+    """
+    Parse OCR text to extract values for known models.
+    Returns:
+        {"disease": <name>, "data": <list of values>}  
+        OR  {"general": <text>}
+    """
+    text = text.lower()
+
+    # --- Diabetes fields ---
+    if "glucose" in text or "insulin" in text or "bmi" in text:
+        values = {
+            "Pregnancies": re.search(r"pregnancies[:\s]+(\d+)", text),
+            "Glucose": re.search(r"glucose[:\s]+(\d+)", text),
+            "BloodPressure": re.search(r"blood pressure[:\s]+(\d+)", text),
+            "SkinThickness": re.search(r"skin thickness[:\s]+(\d+)", text),
+            "Insulin": re.search(r"insulin[:\s]+(\d+)", text),
+            "BMI": re.search(r"bmi[:\s]+([\d.]+)", text),
+            "DiabetesPedigreeFunction": re.search(r"pedigree[:\s]+([\d.]+)", text),
+            "Age": re.search(r"age[:\s]+(\d+)", text)
+        }
+        cleaned = [float(m.group(1)) if m else 0 for m in values.values()]
+        return {"disease": "Diabetes", "data": cleaned}
+
+    # --- Heart Disease fields ---
+    if "cholesterol" in text or "blood pressure" in text or "thal" in text:
+        values = {
+            "Age": re.search(r"age[:\s]+(\d+)", text),
+            "Sex": re.search(r"sex[:\s]+(\d+)", text),
+            "ChestPain": re.search(r"chest pain[:\s]+(\d+)", text),
+            "RestBP": re.search(r"blood pressure[:\s]+(\d+)", text),
+            "Chol": re.search(r"cholesterol[:\s]+(\d+)", text),
+            "FBS": re.search(r"fbs[:\s]+(\d+)", text),
+            "RestECG": re.search(r"ecg[:\s]+(\d+)", text),
+            "MaxHR": re.search(r"heart rate[:\s]+(\d+)", text),
+            "ExAng": re.search(r"angina[:\s]+(\d+)", text),
+            "Oldpeak": re.search(r"oldpeak[:\s]+([\d.]+)", text),
+            "Slope": re.search(r"slope[:\s]+(\d+)", text),
+            "CA": re.search(r"ca[:\s]+(\d+)", text),
+            "Thal": re.search(r"thal[:\s]+(\d+)", text)
+        }
+        cleaned = [float(m.group(1)) if m else 0 for m in values.values()]
+        return {"disease": "Heart Disease", "data": cleaned}
+
+    # --- Parkinson’s fields ---
+    if "jitter" in text or "shimmer" in text or "hnr" in text:
+        numbers = re.findall(r"([\d.]+)", text)
+        if len(numbers) >= 22:   # minimum required
+            cleaned = [float(x) for x in numbers[:22]]
+            return {"disease": "Parkinson’s Disease", "data": cleaned}
+
+    # --- If general report ---
+    return {"general": text}
 
 # ---------------------------------------------------------
 # 5️⃣ Diabetes Prediction
@@ -66,7 +132,7 @@ if selected == 'Diabetes Prediction':
         }
 
 # ---------------------------------------------------------
-# 6️⃣ Heart Disease Prediction (Updated UI with meaningful names)
+# 6️⃣ Heart Disease Prediction
 # ---------------------------------------------------------
 if selected == 'Heart Disease Prediction':
     st.title("Heart Disease Prediction using ML")
@@ -109,35 +175,18 @@ if selected == 'Heart Disease Prediction':
         }
 
 # ---------------------------------------------------------
-# 7️⃣ Parkinson’s Prediction (Updated UI with meaningful names)
+# 7️⃣ Parkinson’s Prediction
 # ---------------------------------------------------------
 if selected == 'Parkinson’s Prediction':
     st.title("Parkinson’s Disease Prediction using ML")
 
     st.markdown("### Enter Voice Measurement Features")
     parkinsons_features = [
-        "MDVP:Fo(Hz) - Average Vocal Fundamental Frequency",
-        "MDVP:Fhi(Hz) - Maximum Vocal Fundamental Frequency",
-        "MDVP:Flo(Hz) - Minimum Vocal Fundamental Frequency",
-        "MDVP:Jitter(%) - Variation in Fundamental Frequency",
-        "MDVP:Jitter(Abs)",
-        "MDVP:RAP (Relative Average Perturbation)",
-        "MDVP:PPQ (Pitch Perturbation Quotient)",
-        "Jitter:DDP",
-        "MDVP:Shimmer",
-        "MDVP:Shimmer(dB)",
-        "Shimmer:APQ3",
-        "Shimmer:APQ5",
-        "MDVP:APQ",
-        "Shimmer:DDA",
-        "NHR (Noise-to-Harmonics Ratio)",
-        "HNR (Harmonics-to-Noise Ratio)",
-        "RPDE (Recurrence Period Density Entropy)",
-        "D2 (Correlation Dimension)",
-        "DFA (Signal Fractal Scaling Exponent)",
-        "Spread1",
-        "Spread2",
-        "PPE (Pitch Period Entropy)"
+        "MDVP:Fo(Hz)", "MDVP:Fhi(Hz)", "MDVP:Flo(Hz)", "MDVP:Jitter(%)",
+        "MDVP:Jitter(Abs)", "MDVP:RAP", "MDVP:PPQ", "Jitter:DDP",
+        "MDVP:Shimmer", "MDVP:Shimmer(dB)", "Shimmer:APQ3", "Shimmer:APQ5",
+        "MDVP:APQ", "Shimmer:DDA", "NHR", "HNR", "RPDE", "D2", "DFA",
+        "Spread1", "Spread2", "PPE"
     ]
 
     inputs = []
@@ -161,25 +210,22 @@ if selected == 'Parkinson’s Prediction':
         }
 
 # ---------------------------------------------------------
-# 8️⃣ HealthBot Assistant (Gemini-Only Chatbot)
+# 8️⃣ HealthBot Assistant
 # ---------------------------------------------------------
 if selected == 'HealthBot Assistant':
     st.title("🤖 AI HealthBot Assistant")
 
-    # --- Gemini Setup ---
     try:
         genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
     except Exception:
         st.error("⚠️ Gemini API key missing or invalid. Please check your configuration.")
         st.stop()
 
-    # --- Initialize Chat Memory ---
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
     if "chat_input" not in st.session_state:
         st.session_state.chat_input = ""
 
-    # --- Chat Display Container ---
     chat_container = st.container()
     with chat_container:
         for msg in st.session_state.chat_history:
@@ -188,29 +234,24 @@ if selected == 'HealthBot Assistant':
                     f"<div style='background-color:#1e1e1e;padding:10px 15px;border-radius:12px;"
                     f"margin:8px 0;text-align:right;color:#fff;'>"
                     f"🧑 <b>You:</b> {msg['content']}"
-                    f"</div>",
-                    unsafe_allow_html=True
+                    f"</div>", unsafe_allow_html=True
                 )
             else:
                 st.markdown(
                     f"<div style='background-color:#2b313e;padding:10px 15px;border-radius:12px;"
                     f"margin:8px 0;text-align:left;color:#e2e2e2;'>"
                     f"🤖 <b>HealthBot:</b> {msg['content']}"
-                    f"</div>",
-                    unsafe_allow_html=True
+                    f"</div>", unsafe_allow_html=True
                 )
 
     st.markdown("---")
 
-    # --- Function: Send Message ---
     def handle_send():
         user_text = st.session_state.chat_input.strip()
         if not user_text:
             return
-
         st.session_state.chat_history.append({"role": "user", "content": user_text})
 
-        # --- System Prompt ---
         system_prompt = (
             "You are a helpful and knowledgeable AI health assistant named HealthBot. "
             "Provide general information on health, wellness, exercise, and diet. "
@@ -218,41 +259,21 @@ if selected == 'HealthBot Assistant':
             "Encourage users to consult professionals for medical concerns."
         )
 
-        # --- Add Disease Prediction Context ---
         last_pred = st.session_state.get('last_prediction', None)
         user_context = ""
         if last_pred:
             disease = last_pred['disease']
             values = last_pred['input']
-
-            if disease == "Diabetes":
-                columns = [
-                    "Pregnancies", "Glucose", "BloodPressure", "SkinThickness",
-                    "Insulin", "BMI", "DiabetesPedigreeFunction", "Age"
-                ]
-            elif disease == "Heart Disease":
-                columns = [
-                    "Age", "Sex", "ChestPainType", "RestingBP", "Cholesterol",
-                    "FastingBS", "RestECG", "MaxHR", "ExerciseAngina",
-                    "Oldpeak", "Slope", "CA", "Thal"
-                ]
-            elif disease == "Parkinson’s Disease":
-                columns = [f"Feature_{i}" for i in range(1, 23)]
-            else:
-                columns = []
-
-            input_with_names = "\n".join([f"{c}: {v}" for c, v in zip(columns, values)])
-
+            input_with_names = "\n".join([str(v) for v in values])
             user_context = (
                 f"\nUser recently tested for {disease}.\n"
-                f"Input details:\n{input_with_names}\n"
                 f"Prediction result: {last_pred['result']}\n"
+                f"Values: {input_with_names}\n"
                 "Give lifestyle advice, diet tips, or precautions related to this data."
             )
 
         full_prompt = f"{system_prompt}\n{user_context}\n\nUser Question: {user_text}"
 
-        # --- Gemini Response ---
         try:
             gemini_model = genai.GenerativeModel("gemini-2.0-flash-lite-preview")
             response = gemini_model.generate_content(full_prompt)
@@ -261,25 +282,51 @@ if selected == 'HealthBot Assistant':
             reply = f"⚠️ Gemini API error: {e}"
 
         st.session_state.chat_history.append({"role": "assistant", "content": reply})
-
-        # ✅ Clear input safely
         st.session_state.chat_input = ""
 
-    # --- Function: Clear Chat ---
     def clear_chat():
         st.session_state.chat_history = []
         st.session_state.chat_input = ""
 
-    # --- Input Box and Buttons ---
-    st.text_area(
-        "💬 Type your message:",
-        key="chat_input",
-        height=80,
-        placeholder="Ask about diet, fitness, or your health data..."
-    )
+    st.text_area("💬 Type your message:", key="chat_input", height=80,
+                 placeholder="Ask about diet, fitness, or your health data...")
 
     col1, col2 = st.columns([4, 1])
     with col1:
         st.button("Send", use_container_width=True, on_click=handle_send)
     with col2:
         st.button("🧹 Clear Chat", use_container_width=True, on_click=clear_chat)
+
+# ---------------------------------------------------------
+# 9️⃣ Upload Health Report (OCR Integration)
+# ---------------------------------------------------------
+if selected == "Upload Health Report":
+    st.title("📑 Upload Health Report for OCR Analysis")
+
+    uploaded_file = st.file_uploader("Upload health report image", type=["png", "jpg", "jpeg"])
+    if uploaded_file is not None:
+        with st.spinner("Extracting text from image..."):
+            extracted_text = extract_text_from_image(uploaded_file)
+
+        st.subheader("📄 Extracted Text")
+        st.text(extracted_text)
+
+        parsed = parse_health_report(extracted_text)
+
+        if "disease" in parsed:
+            st.success(f"✅ Data related to {parsed['disease']} found in report.")
+            st.session_state['last_prediction'] = {
+                'disease': parsed['disease'],
+                'input': parsed['data'],
+                'result': "Pending prediction"
+            }
+            st.info("This data has been auto-filled. Please go to the respective prediction page to run the model.")
+
+        else:
+            st.warning("ℹ️ No direct match with supported diseases. Sending to HealthBot...")
+            st.session_state['last_prediction'] = {
+                'disease': "General Report",
+                'input': [],
+                'result': parsed['general']
+            }
+            st.switch_page("HealthBot Assistant")
