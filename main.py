@@ -323,10 +323,11 @@ if selected == "Upload Health Report":
             st.info("This data has been auto-filled. Please go to the respective prediction page to run the model.")
 
         else:
-            st.warning("ℹ️ No direct match with supported diseases. Sending to HealthBot...")
-            st.session_state['last_prediction'] = {
-                'disease': "General Report",
-                'input': [],
-                'result': parsed['general']
-            }
-            st.switch_page("HealthBot Assistant")
+    st.warning("ℹ️ No direct match with supported diseases. Opening HealthBot for advice...")
+    st.session_state['last_prediction'] = {
+        'disease': "General Report",
+        'input': [],
+        'result': parsed['general']
+    }
+    st.session_state["go_to_healthbot"] = True
+
