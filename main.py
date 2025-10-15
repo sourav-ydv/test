@@ -36,6 +36,13 @@ with st.sidebar:
         default_index=0
     )
 
+
+# Auto-redirect to HealthBot if flagged
+if "go_to_healthbot" in st.session_state and st.session_state["go_to_healthbot"]:
+    selected = "HealthBot Assistant"
+    st.session_state["go_to_healthbot"] = False
+
+
 # ---------------------------------------------------------
 # OCR Utility Functions
 # ---------------------------------------------------------
@@ -330,4 +337,5 @@ if selected == "Upload Health Report":
         'result': parsed['general']
     }
     st.session_state["go_to_healthbot"] = True
+
 
