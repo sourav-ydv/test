@@ -1,9 +1,9 @@
 streamlit
 streamlit-option-menu
-openai
-numpy
 pandas
+numpy
 scikit-learn
+pillow
+pytesseract
+openai
 google-generativeai
-
-
