@@ -1,6 +1,6 @@
 """
 Multi-Disease Prediction System + Smart HealthBot (ChatGPT-style)
-With OCR-based Health Report Auto-Redirect + Auto-Fill + Auto-Reply
+With OCR-based Health Report Auto-Redirect to Chatbot
 """
 
 import pickle
@@ -9,7 +9,6 @@ from streamlit_option_menu import option_menu
 import google.generativeai as genai
 from PIL import Image
 import pytesseract
-import re
 
 # ---------------------------------------------------------
 # 1️⃣ Load ML Models
@@ -36,59 +35,12 @@ with st.sidebar:
     )
 
 # ---------------------------------------------------------
-# OCR Utility Functions
+# OCR Utility
 # ---------------------------------------------------------
 def extract_text_from_image(uploaded_file):
     image = Image.open(uploaded_file)
     text = pytesseract.image_to_string(image)
     return text
-
-def parse_health_report(text):
-    text = text.lower()
-
-    # Diabetes
-    if "glucose" in text or "insulin" in text or "bmi" in text:
-        values = {
-            "Pregnancies": re.search(r"pregnancies[:\s]+(\d+)", text),
-            "Glucose": re.search(r"glucose[:\s]+(\d+)", text),
-            "BloodPressure": re.search(r"blood pressure[:\s]+(\d+)", text),
-            "SkinThickness": re.search(r"skin thickness[:\s]+(\d+)", text),
-            "Insulin": re.search(r"insulin[:\s]+(\d+)", text),
-            "BMI": re.search(r"bmi[:\s]+([\d.]+)", text),
-            "DiabetesPedigreeFunction": re.search(r"pedigree[:\s]+([\d.]+)", text),
-            "Age": re.search(r"age[:\s]+(\d+)", text)
-        }
-        cleaned = [float(m.group(1)) if m else 0 for m in values.values()]
-        return {"disease": "Diabetes", "data": cleaned}
-
-    # Heart
-    if "cholesterol" in text or "blood pressure" in text or "thal" in text:
-        values = {
-            "Age": re.search(r"age[:\s]+(\d+)", text),
-            "Sex": re.search(r"sex[:\s]+(\d+)", text),
-            "ChestPain": re.search(r"chest pain[:\s]+(\d+)", text),
-            "RestBP": re.search(r"blood pressure[:\s]+(\d+)", text),
-            "Chol": re.search(r"cholesterol[:\s]+(\d+)", text),
-            "FBS": re.search(r"fbs[:\s]+(\d+)", text),
-            "RestECG": re.search(r"ecg[:\s]+(\d+)", text),
-            "MaxHR": re.search(r"heart rate[:\s]+(\d+)", text),
-            "ExAng": re.search(r"angina[:\s]+(\d+)", text),
-            "Oldpeak": re.search(r"oldpeak[:\s]+([\d.]+)", text),
-            "Slope": re.search(r"slope[:\s]+(\d+)", text),
-            "CA": re.search(r"ca[:\s]+(\d+)", text),
-            "Thal": re.search(r"thal[:\s]+(\d+)", text)
-        }
-        cleaned = [float(m.group(1)) if m else 0 for m in values.values()]
-        return {"disease": "Heart Disease", "data": cleaned}
-
-    # Parkinson’s
-    if "jitter" in text or "shimmer" in text or "hnr" in text:
-        numbers = re.findall(r"([\d.]+)", text)
-        if len(numbers) >= 22:
-            cleaned = [float(x) for x in numbers[:22]]
-            return {"disease": "Parkinson’s Disease", "data": cleaned}
-
-    return {"general": text}
 
 # ---------------------------------------------------------
 # 🔄 Redirect Handling
@@ -200,7 +152,7 @@ if selected == 'Parkinson’s Prediction':
         st.session_state['last_prediction'] = {'disease': 'Parkinson’s Disease','input': inputs,'result': park_status}
 
 # ---------------------------------------------------------
-# 8️⃣ HealthBot Assistant (with auto-reply + safe reset)
+# 8️⃣ HealthBot Assistant
 # ---------------------------------------------------------
 if selected == 'HealthBot Assistant':
     st.title("🤖 AI HealthBot Assistant")
@@ -229,7 +181,8 @@ if selected == 'HealthBot Assistant':
             st.session_state.chat_history.append({"role": "user", "content": extracted_text})
             system_prompt = (
                 "You are a helpful AI health assistant named HealthBot. "
-                "Provide general health, wellness, exercise, and diet information. "
+                "Analyze the uploaded health report text. "
+                "Provide general health, wellness, exercise, and diet suggestions. "
                 "Do not prescribe medicine. Encourage consulting professionals."
             )
             full_prompt = f"{system_prompt}\n\nUser Health Report:\n{extracted_text}\n\nGive advice and suggestions."
@@ -258,7 +211,11 @@ if selected == 'HealthBot Assistant':
             text = st.session_state["chat_input"].strip()
             if text:
                 st.session_state.chat_history.append({"role": "user", "content": text})
-                system_prompt = "You are HealthBot..."
+                system_prompt = (
+                    "You are a helpful AI health assistant named HealthBot. "
+                    "Provide safe, supportive responses. "
+                    "Do not prescribe medicine."
+                )
                 full_prompt = f"{system_prompt}\n\nUser Question: {text}"
                 try:
                     gemini_model = genai.GenerativeModel("gemini-2.0-flash-lite-preview")
@@ -278,7 +235,7 @@ if selected == 'HealthBot Assistant':
             st.rerun()
 
 # ---------------------------------------------------------
-# 9️⃣ Upload Health Report (OCR Integration)
+# 9️⃣ Upload Health Report (OCR → Chatbot only)
 # ---------------------------------------------------------
 if selected == "Upload Health Report":
     st.title("📑 Upload Health Report for OCR Analysis")
@@ -291,18 +248,11 @@ if selected == "Upload Health Report":
         st.subheader("📄 Extracted Text")
         st.text(extracted_text)
 
-        parsed = parse_health_report(extracted_text)
-
-        if "disease" in parsed:
-            st.session_state['last_prediction'] = {'disease': parsed['disease'], 'input': parsed['data'], 'result': "Pending prediction"}
-            if parsed['disease'] == "Diabetes":
-                st.session_state["redirect_to"] = "Diabetes Prediction"
-            elif parsed['disease'] == "Heart Disease":
-                st.session_state["redirect_to"] = "Heart Disease Prediction"
-            elif parsed['disease'] == "Parkinson’s Disease":
-                st.session_state["redirect_to"] = "Parkinson’s Prediction"
-            st.rerun()
-        else:
-            st.session_state['last_prediction'] = {'disease': "General Report", 'input': [], 'result': parsed['general']}
-            st.session_state["redirect_to"] = "HealthBot Assistant"
-            st.rerun()
+        # Always send extracted text to chatbot
+        st.session_state['last_prediction'] = {
+            'disease': "General Report",
+            'input': [],
+            'result': extracted_text
+        }
+        st.session_state["redirect_to"] = "HealthBot Assistant"
+        st.rerun()
