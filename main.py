@@ -67,8 +67,8 @@ if selected == 'Diabetes Prediction':
 
     if st.button('Diabetes Test Result'):
         user_input_d = [int(Pregnancies), int(Glucose), int(BloodPressure),
-                      int(SkinThickness), int(Insulin), float(BMI),
-                      float(DiabetesPedigreeFunction), int(Age)]
+                        int(SkinThickness), int(Insulin), float(BMI),
+                        float(DiabetesPedigreeFunction), int(Age)]
         diab_prediction = diabetes_model.predict([user_input_d])
         if diab_prediction[0] == 1:
             st.error('The person is likely to have diabetes.')
@@ -180,12 +180,12 @@ if selected == 'HealthBot Assistant':
     # --- Auto-reply if OCR uploaded ---
     if st.session_state.get("last_prediction", {}).get("disease") == "General Report":
         report_text = st.session_state["last_prediction"]["result"]
-        if not any(msg["role"] == "assistant" and report_text in msg["content"] for msg in st.session_state.chat_history):
+        if not any(msg["content"] == report_text for msg in st.session_state.chat_history):
+            st.session_state.chat_history.append({"role": "user", "content": report_text})
             system_prompt = (
-                "You are HealthBot, a detailed and safe AI health assistant.\n"
-                "Analyze the uploaded health report text and explain in detail.\n"
-                "Always reply in this structured format:\n"
-                "### Findings\n- ...\n\n### Risks\n- ...\n\n### Suggestions\n- ...\n\n"
+                "You are a helpful AI health assistant named HealthBot. "
+                "Analyze the uploaded health report text. "
+                "Provide structured insights with: Findings, Risks, Suggestions. "
                 "Do not prescribe medicine."
             )
             full_prompt = f"{system_prompt}\n\nHealth Report:\n{report_text}"
@@ -212,23 +212,26 @@ if selected == 'HealthBot Assistant':
         text = st.session_state.chat_input.strip()
         if not text:
             return
+
         st.session_state.chat_history.append({"role": "user", "content": text})
 
-        # Add last prediction/report context
+        # Add last prediction context
         last_pred = st.session_state.get('last_prediction', None)
         user_context = ""
-        if last_pred:
+        if last_pred and last_pred['disease'] != "General Report":
             user_context = (
-                f"\nContext:\nDisease/Test: {last_pred['disease']}\n"
+                f"\nPrevious Test Performed: {last_pred['disease']}\n"
                 f"Input Values: {last_pred['input']}\n"
-                f"Result: {last_pred['result']}\n"
+                f"Prediction Result: {last_pred['result']}\n"
             )
 
         full_prompt = (
-            "You are HealthBot, a safe and detailed AI health assistant.\n"
-            "Explain clearly and always in this structured format:\n"
-            "### Findings\n- ...\n\n### Risks\n- ...\n\n### Suggestions\n- ...\n\n"
-            "Do not prescribe medicine.\n"
+            "You are HealthBot, a safe AI assistant.\n"
+            "Always give structured and detailed answers with:\n"
+            "- Findings: interpret the test values.\n"
+            "- Risks: explain possible health implications.\n"
+            "- Suggestions: lifestyle, diet, or follow-up actions.\n"
+            "Never prescribe medicines.\n\n"
             f"{user_context}\nUser Question: {text}"
         )
 
@@ -245,9 +248,7 @@ if selected == 'HealthBot Assistant':
     def clear_chat():
         st.session_state.chat_history = []
         st.session_state.chat_input = ""
-        # also clear uploaded report/prediction
-        if "last_prediction" in st.session_state:
-            st.session_state['last_prediction'] = None
+        st.session_state['last_prediction'] = None   # ✅ clears uploaded report & last disease prediction
 
     with col1:
         st.button("Send", use_container_width=True, on_click=handle_send)
@@ -268,7 +269,7 @@ if selected == "Upload Health Report":
         st.subheader("📄 Extracted Text")
         st.text(extracted_text)
 
-        # Save report for chatbot
+        # Send extracted report text to chatbot
         st.session_state['last_prediction'] = {
             'disease': "General Report",
             'input': [],
