@@ -178,8 +178,9 @@ if selected == 'HealthBot Assistant':
         st.session_state.chat_input = ""
 
     # --- Auto-reply if OCR uploaded ---
-    if st.session_state.get("last_prediction", {}).get("disease") == "General Report":
-        report_text = st.session_state["last_prediction"]["result"]
+    last_pred = st.session_state.get("last_prediction", None)
+    if isinstance(last_pred, dict) and last_pred.get("disease") == "General Report":
+        report_text = last_pred["result"]
         if not any(msg["content"] == report_text for msg in st.session_state.chat_history):
             st.session_state.chat_history.append({"role": "user", "content": report_text})
             system_prompt = (
@@ -218,7 +219,7 @@ if selected == 'HealthBot Assistant':
         # Add last prediction context
         last_pred = st.session_state.get('last_prediction', None)
         user_context = ""
-        if last_pred and last_pred['disease'] != "General Report":
+        if isinstance(last_pred, dict) and last_pred.get('disease') != "General Report":
             user_context = (
                 f"\nPrevious Test Performed: {last_pred['disease']}\n"
                 f"Input Values: {last_pred['input']}\n"
@@ -248,7 +249,7 @@ if selected == 'HealthBot Assistant':
     def clear_chat():
         st.session_state.chat_history = []
         st.session_state.chat_input = ""
-        st.session_state['last_prediction'] = None   # ✅ clears uploaded report & last disease prediction
+        st.session_state['last_prediction'] = None   # ✅ clears uploaded report & last prediction
 
     with col1:
         st.button("Send", use_container_width=True, on_click=handle_send)
