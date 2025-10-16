@@ -6,6 +6,7 @@ OpenAI (primary) + Gemini fallback (gemini-2.5-flash-lite)
 import pickle
 import streamlit as st
 from streamlit_option_menu import option_menu
+from openai import OpenAI
 import google.generativeai as genai
 from PIL import Image
 import pytesseract
@@ -176,6 +177,26 @@ if selected == 'HealthBot Assistant':
     if "chat_input" not in st.session_state:
         st.session_state.chat_input = ""
 
+    # --- Auto-reply if OCR uploaded ---
+    if st.session_state.get("last_prediction", {}).get("disease") == "General Report":
+        report_text = st.session_state["last_prediction"]["result"]
+        if not any(msg["role"] == "assistant" and report_text in msg["content"] for msg in st.session_state.chat_history):
+            system_prompt = (
+                "You are HealthBot, a detailed and safe AI health assistant.\n"
+                "Analyze the uploaded health report text and explain in detail.\n"
+                "Always reply in this structured format:\n"
+                "### Findings\n- ...\n\n### Risks\n- ...\n\n### Suggestions\n- ...\n\n"
+                "Do not prescribe medicine."
+            )
+            full_prompt = f"{system_prompt}\n\nHealth Report:\n{report_text}"
+            try:
+                gemini_model = genai.GenerativeModel("gemini-2.0-flash-lite-preview")
+                response = gemini_model.generate_content(full_prompt)
+                reply = response.text
+            except Exception as e:
+                reply = f"⚠️ Gemini API error: {e}"
+            st.session_state.chat_history.append({"role": "assistant", "content": reply})
+
     # --- Show chat history ---
     for msg in st.session_state.chat_history:
         if msg["role"] == "user":
@@ -198,24 +219,17 @@ if selected == 'HealthBot Assistant':
         user_context = ""
         if last_pred:
             user_context = (
-                f"\n### Context\n"
-                f"Disease/Test: {last_pred['disease']}\n"
+                f"\nContext:\nDisease/Test: {last_pred['disease']}\n"
                 f"Input Values: {last_pred['input']}\n"
                 f"Result: {last_pred['result']}\n"
-                "Explain in structured format."
             )
 
         full_prompt = (
-            "You are HealthBot, a safe and detailed AI health assistant. "
-            "Your job:\n"
-            "1. Explain input values and what they mean.\n"
-            "2. Interpret the prediction result or uploaded report.\n"
-            "3. Provide structured insights in this format:\n"
-            "### Findings\n- ...\n\n"
-            "### Risks\n- ...\n\n"
-            "### Suggestions\n- ...\n\n"
-            "4. Do not prescribe medicine.\n"
-            f"{user_context}\n\nUser Question: {text}"
+            "You are HealthBot, a safe and detailed AI health assistant.\n"
+            "Explain clearly and always in this structured format:\n"
+            "### Findings\n- ...\n\n### Risks\n- ...\n\n### Suggestions\n- ...\n\n"
+            "Do not prescribe medicine.\n"
+            f"{user_context}\nUser Question: {text}"
         )
 
         try:
@@ -231,6 +245,7 @@ if selected == 'HealthBot Assistant':
     def clear_chat():
         st.session_state.chat_history = []
         st.session_state.chat_input = ""
+        # also clear uploaded report/prediction
         if "last_prediction" in st.session_state:
             st.session_state['last_prediction'] = None
 
@@ -240,7 +255,7 @@ if selected == 'HealthBot Assistant':
         st.button("🧹 Clear Chat", use_container_width=True, on_click=clear_chat)
 
 # ---------------------------------------------------------
-# 9️⃣ Upload Health Report (OCR → Chatbot structured analysis)
+# 9️⃣ Upload Health Report (OCR → Chatbot only)
 # ---------------------------------------------------------
 if selected == "Upload Health Report":
     st.title("📑 Upload Health Report for OCR Analysis")
@@ -253,35 +268,11 @@ if selected == "Upload Health Report":
         st.subheader("📄 Extracted Text")
         st.text(extracted_text)
 
-        # Store extracted report
+        # Save report for chatbot
         st.session_state['last_prediction'] = {
             'disease': "General Report",
             'input': [],
             'result': extracted_text
         }
-
-        # Generate structured analysis immediately
-        system_prompt = (
-            "You are HealthBot, a safe and detailed AI health assistant.\n"
-            "Analyze the uploaded health report text carefully.\n"
-            "Provide output in this structured format:\n"
-            "### Findings\n- ...\n\n"
-            "### Risks\n- ...\n\n"
-            "### Suggestions\n- ...\n\n"
-            "Do not prescribe medicine."
-        )
-        full_prompt = f"{system_prompt}\n\nHealth Report:\n{extracted_text}"
-
-        try:
-            gemini_model = genai.GenerativeModel("gemini-2.0-flash-lite-preview")
-            response = gemini_model.generate_content(full_prompt)
-            reply = response.text
-        except Exception as e:
-            reply = f"⚠️ Gemini API error: {e}"
-
-        if "chat_history" not in st.session_state:
-            st.session_state.chat_history = []
-        st.session_state.chat_history.append({"role": "assistant", "content": reply})
-
         st.session_state["redirect_to"] = "HealthBot Assistant"
         st.rerun()
