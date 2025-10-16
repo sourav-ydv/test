@@ -120,8 +120,12 @@ if selected == 'Diabetes Prediction':
                       int(SkinThickness), int(Insulin), float(BMI),
                       float(DiabetesPedigreeFunction), int(Age)]
         diab_prediction = diabetes_model.predict([user_input_d])
-        diab_status = 'likely to have diabetes' if diab_prediction[0] == 1 else 'not diabetic'
-        st.error('The person is likely to have diabetes.') if diab_prediction[0] == 1 else st.success('The person is not diabetic.')
+        if diab_prediction[0] == 1:
+            st.error('The person is likely to have diabetes.')
+            diab_status = 'likely to have diabetes'
+        else:
+            st.success('The person is not diabetic.')
+            diab_status = 'not diabetic'
         st.session_state['last_prediction'] = {'disease': 'Diabetes','input': user_input_d,'result': diab_status}
 
 # ---------------------------------------------------------
@@ -156,8 +160,12 @@ if selected == 'Heart Disease Prediction':
                         int(fbs), int(restecg), int(thalach), int(exang),
                         float(oldpeak), int(slope), int(ca), int(thal)]
         heart_prediction = heart_model.predict([user_input_h])
-        heart_status = 'likely to have heart disease' if heart_prediction[0] == 1 else 'does not have any heart disease'
-        st.error('The person is likely to have heart disease.') if heart_prediction[0] == 1 else st.success('The person does not have any heart disease.')
+        if heart_prediction[0] == 1:
+            st.error('The person is likely to have heart disease.')
+            heart_status = 'likely to have heart disease'
+        else:
+            st.success('The person does not have any heart disease.')
+            heart_status = 'does not have any heart disease'
         st.session_state['last_prediction'] = {'disease': 'Heart Disease','input': user_input_h,'result': heart_status}
 
 # ---------------------------------------------------------
@@ -183,114 +191,10 @@ if selected == 'Parkinson’s Prediction':
 
     if st.button('Parkinson’s Test Result'):
         park_prediction = parkinsons_model.predict([inputs])
-        park_status = 'likely to have Parkinson’s Disease' if park_prediction[0] == 1 else 'does not have Parkinson’s Disease'
-        st.error('The person likely has Parkinson’s Disease.') if park_prediction[0] == 1 else st.success('The person is healthy.')
+        if park_prediction[0] == 1:
+            st.error('The person likely has Parkinson’s Disease.')
+            park_status = 'likely to have Parkinson’s Disease'
+        else:
+            st.success('The person is healthy.')
+            park_status = 'does not have Parkinson’s Disease'
         st.session_state['last_prediction'] = {'disease': 'Parkinson’s Disease','input': inputs,'result': park_status}
-
-# ---------------------------------------------------------
-# 8️⃣ HealthBot Assistant (auto-reply + safe reset)
-# ---------------------------------------------------------
-if selected == 'HealthBot Assistant':
-    st.title("🤖 AI HealthBot Assistant")
-
-    try:
-        genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-    except Exception:
-        st.error("⚠️ Gemini API key missing or invalid. Please check your configuration.")
-        st.stop()
-
-    if "chat_history" not in st.session_state:
-        st.session_state.chat_history = []
-
-    # ✅ Reset input BEFORE widget
-    if st.session_state.get("reset_chat_input", False):
-        st.session_state.pop("chat_input", None)
-        st.session_state["reset_chat_input"] = False
-
-    if "chat_input" not in st.session_state:
-        st.session_state["chat_input"] = ""
-
-    # 🔄 Auto-start reply if redirected from OCR
-    if st.session_state.get("last_prediction", {}).get("disease") == "General Report":
-        extracted_text = st.session_state["last_prediction"]["result"]
-        if not any(msg["content"] == extracted_text for msg in st.session_state.chat_history):
-            st.session_state.chat_history.append({"role": "user", "content": extracted_text})
-            system_prompt = (
-                "You are a helpful AI health assistant named HealthBot. "
-                "Provide general health, wellness, exercise, and diet information. "
-                "Do not prescribe medicine. Encourage consulting professionals."
-            )
-            full_prompt = f"{system_prompt}\n\nUser Health Report:\n{extracted_text}\n\nGive advice and suggestions."
-            try:
-                gemini_model = genai.GenerativeModel("gemini-2.0-flash-lite-preview")
-                response = gemini_model.generate_content(full_prompt)
-                reply = response.text
-            except Exception as e:
-                reply = f"⚠️ Gemini API error: {e}"
-            st.session_state.chat_history.append({"role": "assistant", "content": reply})
-
-    # Show chat history
-    for msg in st.session_state.chat_history:
-        if msg["role"] == "user":
-            st.markdown(f"<div style='background:#1e1e1e;padding:10px;border-radius:12px;margin:8px 0;text-align:right;color:#fff;'>🧑 <b>You:</b> {msg['content']}</div>", unsafe_allow_html=True)
-        else:
-            st.markdown(f"<div style='background:#2b313e;padding:10px;border-radius:12px;margin:8px 0;text-align:left;color:#e2e2e2;'>🤖 <b>HealthBot:</b> {msg['content']}</div>", unsafe_allow_html=True)
-
-    # Chat input area
-    st.text_area("💬 Type your message:", key="chat_input", height=80, placeholder="Ask about diet, fitness, or your health data...")
-
-    col1, col2 = st.columns([4, 1])
-
-    with col1:
-        if st.button("Send", use_container_width=True):
-            text = st.session_state["chat_input"].strip()
-            if text:
-                st.session_state.chat_history.append({"role": "user", "content": text})
-                system_prompt = "You are HealthBot..."
-                full_prompt = f"{system_prompt}\n\nUser Question: {text}"
-                try:
-                    gemini_model = genai.GenerativeModel("gemini-2.0-flash-lite-preview")
-                    response = gemini_model.generate_content(full_prompt)
-                    reply = response.text
-                except Exception as e:
-                    reply = f"⚠️ Gemini API error: {e}"
-                st.session_state.chat_history.append({"role": "assistant", "content": reply})
-
-            st.session_state["reset_chat_input"] = True
-            st.rerun()
-
-    with col2:
-        if st.button("🧹 Clear Chat", use_container_width=True):
-            st.session_state.chat_history = []
-            st.session_state["reset_chat_input"] = True
-            st.rerun()
-
-# ---------------------------------------------------------
-# 9️⃣ Upload Health Report (OCR Integration)
-# ---------------------------------------------------------
-if selected == "Upload Health Report":
-    st.title("📑 Upload Health Report for OCR Analysis")
-
-    uploaded_file = st.file_uploader("Upload health report image", type=["png", "jpg", "jpeg"])
-    if uploaded_file is not None:
-        with st.spinner("Extracting text from image..."):
-            extracted_text = extract_text_from_image(uploaded_file)
-
-        st.subheader("📄 Extracted Text")
-        st.text(extracted_text)
-
-        parsed = parse_health_report(extracted_text)
-
-        if "disease" in parsed:
-            st.session_state['last_prediction'] = {'disease': parsed['disease'], 'input': parsed['data'], 'result': "Pending prediction"}
-            if parsed['disease'] == "Diabetes":
-                st.session_state["redirect_to"] = "Diabetes Prediction"
-            elif parsed['disease'] == "Heart Disease":
-                st.session_state["redirect_to"] = "Heart Disease Prediction"
-            elif parsed['disease'] == "Parkinson’s Disease":
-                st.session_state["redirect_to"] = "Parkinson’s Prediction"
-            st.rerun()
-        else:
-            st.session_state['last_prediction'] = {'disease': "General Report", 'input': [], 'result': parsed['general']}
-            st.session_state["redirect_to"] = "HealthBot Assistant"
-            st.rerun()
