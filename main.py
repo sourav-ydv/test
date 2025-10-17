@@ -245,16 +245,6 @@ if selected == 'HealthBot Assistant':
         st.session_state.chat_history = []
         st.session_state['last_prediction'] = None
 
-
-
-    def clear_chat():
-        st.session_state.chat_history = []
-        st.session_state.chat_input = ""
-        st.session_state['last_prediction'] = None   # ✅ clears uploaded report & last prediction
-
-    with col1:
-        st.button("🧹 Clear Chat", use_container_width=True, on_click=clear_chat)
-
 # ---------------------------------------------------------
 # 9️⃣ Upload Health Report (OCR → Chatbot only)
 # ---------------------------------------------------------
@@ -277,6 +267,7 @@ if selected == "Upload Health Report":
         }
         st.session_state["redirect_to"] = "HealthBot Assistant"
         st.rerun()
+
 
 
 
