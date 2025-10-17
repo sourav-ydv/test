@@ -206,39 +206,39 @@ if selected == 'HealthBot Assistant':
             st.markdown(f"<div style='background:#2b313e;padding:10px;border-radius:12px;margin:8px 0;text-align:left;color:#e2e2e2;'>🤖 <b>HealthBot:</b> {msg['content']}</div>", unsafe_allow_html=True)
 
     # --- Input & buttons ---
-user_message = st.chat_input("💬 Type your message...")
-
-if user_message:
-    st.session_state.chat_history.append({"role": "user", "content": user_message})
-
-    # Add last prediction context
-    last_pred = st.session_state.get('last_prediction', None)
-    user_context = ""
-    if isinstance(last_pred, dict) and last_pred.get('disease') != "General Report":
-        user_context = (
-            f"\nPrevious Test Performed: {last_pred['disease']}\n"
-            f"Input Values: {last_pred['input']}\n"
-            f"Prediction Result: {last_pred['result']}\n"
+    user_message = st.chat_input("💬 Type your message...")
+    
+    if user_message:
+        st.session_state.chat_history.append({"role": "user", "content": user_message})
+    
+        # Add last prediction context
+        last_pred = st.session_state.get('last_prediction', None)
+        user_context = ""
+        if isinstance(last_pred, dict) and last_pred.get('disease') != "General Report":
+            user_context = (
+                f"\nPrevious Test Performed: {last_pred['disease']}\n"
+                f"Input Values: {last_pred['input']}\n"
+                f"Prediction Result: {last_pred['result']}\n"
+            )
+    
+        full_prompt = (
+            "You are HealthBot, a safe AI assistant.\n"
+            "Always give structured and detailed answers with:\n"
+            "- Findings: interpret the test values.\n"
+            "- Risks: explain possible health implications.\n"
+            "- Suggestions: lifestyle, diet, or follow-up actions.\n"
+            "Never prescribe medicines.\n\n"
+            f"{user_context}\nUser Question: {user_message}"
         )
-
-    full_prompt = (
-        "You are HealthBot, a safe AI assistant.\n"
-        "Always give structured and detailed answers with:\n"
-        "- Findings: interpret the test values.\n"
-        "- Risks: explain possible health implications.\n"
-        "- Suggestions: lifestyle, diet, or follow-up actions.\n"
-        "Never prescribe medicines.\n\n"
-        f"{user_context}\nUser Question: {user_message}"
-    )
-
-    try:
-        gemini_model = genai.GenerativeModel("gemini-2.0-flash-lite-preview")
-        response = gemini_model.generate_content(full_prompt)
-        reply = response.text
-    except Exception as e:
-        reply = f"⚠️ Gemini API error: {e}"
-
-    st.session_state.chat_history.append({"role": "assistant", "content": reply})
+    
+        try:
+            gemini_model = genai.GenerativeModel("gemini-2.0-flash-lite-preview")
+            response = gemini_model.generate_content(full_prompt)
+            reply = response.text
+        except Exception as e:
+            reply = f"⚠️ Gemini API error: {e}"
+    
+        st.session_state.chat_history.append({"role": "assistant", "content": reply})
 
 
     def clear_chat():
@@ -273,4 +273,5 @@ if selected == "Upload Health Report":
         }
         st.session_state["redirect_to"] = "HealthBot Assistant"
         st.rerun()
+
 
