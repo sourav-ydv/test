@@ -247,8 +247,6 @@ if selected == 'HealthBot Assistant':
         st.session_state['last_prediction'] = None   # ✅ clears uploaded report & last prediction
 
     with col1:
-        st.button("Send", use_container_width=True, on_click=handle_send)
-    with col2:
         st.button("🧹 Clear Chat", use_container_width=True, on_click=clear_chat)
 
 # ---------------------------------------------------------
@@ -273,5 +271,6 @@ if selected == "Upload Health Report":
         }
         st.session_state["redirect_to"] = "HealthBot Assistant"
         st.rerun()
+
 
 
