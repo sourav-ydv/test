@@ -240,10 +240,12 @@ if selected == 'HealthBot Assistant':
     
         st.session_state.chat_history.append({"role": "assistant", "content": reply})
     
-    # --- Keep Clear Chat button below input ---
-    if st.button("🧹 Clear Chat", use_container_width=True):
-        st.session_state.chat_history = []
-        st.session_state['last_prediction'] = None
+    # --- Move Clear Chat button to sidebar ---
+    with st.sidebar:
+        if st.button("🧹 Clear Chat"):
+            st.session_state.chat_history = []
+            st.session_state['last_prediction'] = None
+
 
 
 # ---------------------------------------------------------
@@ -268,6 +270,7 @@ if selected == "Upload Health Report":
         }
         st.session_state["redirect_to"] = "HealthBot Assistant"
         st.rerun()
+
 
 
 
