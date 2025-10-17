@@ -205,9 +205,8 @@ if selected == 'HealthBot Assistant':
         else:
             st.markdown(f"<div style='background:#2b313e;padding:10px;border-radius:12px;margin:8px 0;text-align:left;color:#e2e2e2;'>🤖 <b>HealthBot:</b> {msg['content']}</div>", unsafe_allow_html=True)
 
-    # --- Input & buttons ---
+    # --- Input field (Enter to send) ---
     user_message = st.chat_input("💬 Type your message...")
-    col1 = st.columns([1, ])
     
     if user_message:
         st.session_state.chat_history.append({"role": "user", "content": user_message})
@@ -241,6 +240,12 @@ if selected == 'HealthBot Assistant':
     
         st.session_state.chat_history.append({"role": "assistant", "content": reply})
 
+# --- Keep Clear Chat button below input ---
+if st.button("🧹 Clear Chat", use_container_width=True):
+    st.session_state.chat_history = []
+    st.session_state['last_prediction'] = None
+
+
 
     def clear_chat():
         st.session_state.chat_history = []
@@ -272,6 +277,7 @@ if selected == "Upload Health Report":
         }
         st.session_state["redirect_to"] = "HealthBot Assistant"
         st.rerun()
+
 
 
 
