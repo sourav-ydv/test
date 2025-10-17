@@ -174,8 +174,6 @@ if selected == 'HealthBot Assistant':
 
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
-    if "chat_input" not in st.session_state:
-        st.session_state.chat_input = ""
 
     # --- Auto-reply if OCR uploaded ---
     last_pred = st.session_state.get("last_prediction", None)
@@ -197,20 +195,27 @@ if selected == 'HealthBot Assistant':
             except Exception as e:
                 reply = f"⚠️ Gemini API error: {e}"
             st.session_state.chat_history.append({"role": "assistant", "content": reply})
+            st.rerun()
 
     # --- Show chat history ---
     for msg in st.session_state.chat_history:
         if msg["role"] == "user":
-            st.markdown(f"<div style='background:#1e1e1e;padding:10px;border-radius:12px;margin:8px 0;text-align:right;color:#fff;'>🧑 <b>You:</b> {msg['content']}</div>", unsafe_allow_html=True)
+            st.markdown(
+                f"<div style='background:#1e1e1e;padding:10px;border-radius:12px;margin:8px 0;text-align:right;color:#fff;'>🧑 <b>You:</b> {msg['content']}</div>",
+                unsafe_allow_html=True
+            )
         else:
-            st.markdown(f"<div style='background:#2b313e;padding:10px;border-radius:12px;margin:8px 0;text-align:left;color:#e2e2e2;'>🤖 <b>HealthBot:</b> {msg['content']}</div>", unsafe_allow_html=True)
+            st.markdown(
+                f"<div style='background:#2b313e;padding:10px;border-radius:12px;margin:8px 0;text-align:left;color:#e2e2e2;'>🤖 <b>HealthBot:</b> {msg['content']}</div>",
+                unsafe_allow_html=True
+            )
 
-    # --- Input field (Enter to send) ---
+    # --- Input field ---
     user_message = st.chat_input("💬 Type your message...")
-    
+
     if user_message:
         st.session_state.chat_history.append({"role": "user", "content": user_message})
-    
+
         # Add last prediction context
         last_pred = st.session_state.get('last_prediction', None)
         user_context = ""
@@ -220,7 +225,7 @@ if selected == 'HealthBot Assistant':
                 f"Input Values: {last_pred['input']}\n"
                 f"Prediction Result: {last_pred['result']}\n"
             )
-    
+
         full_prompt = (
             "You are HealthBot, a safe AI assistant.\n"
             "Always give structured and detailed answers with:\n"
@@ -230,23 +235,23 @@ if selected == 'HealthBot Assistant':
             "Never prescribe medicines.\n\n"
             f"{user_context}\nUser Question: {user_message}"
         )
-    
+
         try:
             gemini_model = genai.GenerativeModel("gemini-2.0-flash-lite-preview")
             response = gemini_model.generate_content(full_prompt)
             reply = response.text
         except Exception as e:
             reply = f"⚠️ Gemini API error: {e}"
-    
+
         st.session_state.chat_history.append({"role": "assistant", "content": reply})
-    
-    # --- Move Clear Chat button to sidebar ---
+        st.rerun()   # ✅ Refresh immediately so no delay
+
+    # --- Clear Chat button in sidebar ---
     with st.sidebar:
         if st.button("🧹 Clear Chat"):
             st.session_state.chat_history = []
             st.session_state['last_prediction'] = None
-
-
+            st.rerun()   # ✅ Instant clear
 
 # ---------------------------------------------------------
 # 9️⃣ Upload Health Report (OCR → Chatbot only)
@@ -270,11 +275,3 @@ if selected == "Upload Health Report":
         }
         st.session_state["redirect_to"] = "HealthBot Assistant"
         st.rerun()
-
-
-
-
-
-
-
-
