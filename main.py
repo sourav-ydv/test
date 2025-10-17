@@ -207,6 +207,7 @@ if selected == 'HealthBot Assistant':
 
     # --- Input & buttons ---
     user_message = st.chat_input("💬 Type your message...")
+    col1 = st.columns([1, ])
     
     if user_message:
         st.session_state.chat_history.append({"role": "user", "content": user_message})
