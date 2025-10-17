@@ -161,7 +161,7 @@ if selected == 'Parkinson’s Prediction':
         }
 
 # ---------------------------------------------------------
-# 8️⃣ HealthBot Assistant (ChatGPT-like UI)
+# 8️⃣ HealthBot Assistant
 # ---------------------------------------------------------
 if selected == 'HealthBot Assistant':
     st.title("🤖 AI HealthBot Assistant")
@@ -198,65 +198,63 @@ if selected == 'HealthBot Assistant':
                 reply = f"⚠️ Gemini API error: {e}"
             st.session_state.chat_history.append({"role": "assistant", "content": reply})
 
-    # --- Show chat history in a scrollable container ---
-    chat_container = st.container()
-    with chat_container:
-        for msg in st.session_state.chat_history:
-            if msg["role"] == "user":
-                st.markdown(
-                    f"<div style='background:#1e1e1e;padding:10px;border-radius:12px;margin:8px 0;text-align:right;color:#fff;'>🧑 <b>You:</b> {msg['content']}</div>",
-                    unsafe_allow_html=True,
-                )
-            else:
-                st.markdown(
-                    f"<div style='background:#2b313e;padding:10px;border-radius:12px;margin:8px 0;text-align:left;color:#e2e2e2;'>🤖 <b>HealthBot:</b> {msg['content']}</div>",
-                    unsafe_allow_html=True,
-                )
-        # Auto-scroll to latest message
-        st.markdown("<script>window.scrollTo(0, document.body.scrollHeight);</script>", unsafe_allow_html=True)
+    # --- Show chat history ---
+    for msg in st.session_state.chat_history:
+        if msg["role"] == "user":
+            st.markdown(f"<div style='background:#1e1e1e;padding:10px;border-radius:12px;margin:8px 0;text-align:right;color:#fff;'>🧑 <b>You:</b> {msg['content']}</div>", unsafe_allow_html=True)
+        else:
+            st.markdown(f"<div style='background:#2b313e;padding:10px;border-radius:12px;margin:8px 0;text-align:left;color:#e2e2e2;'>🤖 <b>HealthBot:</b> {msg['content']}</div>", unsafe_allow_html=True)
 
-    # --- Input box fixed at bottom like ChatGPT ---
-user_message = st.chat_input("💬 Ask about diet, fitness, or your health data...")
+    # --- Input & buttons ---
+    st.text_area("💬 Type your message:", key="chat_input", height=80, placeholder="Ask about diet, fitness, or your health data...")
+    col1, col2 = st.columns([4, 1])
 
-if user_message:
-    # Append user message
-    st.session_state.chat_history.append({"role": "user", "content": user_message})
+    def handle_send():
+        text = st.session_state.chat_input.strip()
+        if not text:
+            return
 
-    # Add last prediction context
-    last_pred = st.session_state.get('last_prediction', None)
-    user_context = ""
-    if isinstance(last_pred, dict) and last_pred.get('disease') != "General Report":
-        user_context = (
-            f"\nPrevious Test Performed: {last_pred['disease']}\n"
-            f"Input Values: {last_pred['input']}\n"
-            f"Prediction Result: {last_pred['result']}\n"
+        st.session_state.chat_history.append({"role": "user", "content": text})
+
+        # Add last prediction context
+        last_pred = st.session_state.get('last_prediction', None)
+        user_context = ""
+        if isinstance(last_pred, dict) and last_pred.get('disease') != "General Report":
+            user_context = (
+                f"\nPrevious Test Performed: {last_pred['disease']}\n"
+                f"Input Values: {last_pred['input']}\n"
+                f"Prediction Result: {last_pred['result']}\n"
+            )
+
+        full_prompt = (
+            "You are HealthBot, a safe AI assistant.\n"
+            "Always give structured and detailed answers with:\n"
+            "- Findings: interpret the test values.\n"
+            "- Risks: explain possible health implications.\n"
+            "- Suggestions: lifestyle, diet, or follow-up actions.\n"
+            "Never prescribe medicines.\n\n"
+            f"{user_context}\nUser Question: {text}"
         )
 
-    full_prompt = (
-        "You are HealthBot, a safe AI assistant.\n"
-        "Always give structured and detailed answers with:\n"
-        "- Findings: interpret the test values.\n"
-        "- Risks: explain possible health implications.\n"
-        "- Suggestions: lifestyle, diet, or follow-up actions.\n"
-        "Never prescribe medicines.\n\n"
-        f"{user_context}\nUser Question: {user_message}"
-    )
+        try:
+            gemini_model = genai.GenerativeModel("gemini-2.0-flash-lite-preview")
+            response = gemini_model.generate_content(full_prompt)
+            reply = response.text
+        except Exception as e:
+            reply = f"⚠️ Gemini API error: {e}"
 
-    try:
-        gemini_model = genai.GenerativeModel("gemini-2.0-flash-lite-preview")
-        response = gemini_model.generate_content(full_prompt)
-        reply = response.text
-    except Exception as e:
-        reply = f"⚠️ Gemini API error: {e}"
+        st.session_state.chat_history.append({"role": "assistant", "content": reply})
+        st.session_state.chat_input = ""
 
-    # Append bot response
-    st.session_state.chat_history.append({"role": "assistant", "content": reply})
+    def clear_chat():
+        st.session_state.chat_history = []
+        st.session_state.chat_input = ""
+        st.session_state['last_prediction'] = None   # ✅ clears uploaded report & last prediction
 
-# ✅ Keep Clear Chat button
-st.button("🧹 Clear Chat", on_click=lambda: (
-    st.session_state.update({"chat_history": [], "last_prediction": None})
-), use_container_width=True)
-
+    with col1:
+        st.button("Send", use_container_width=True, on_click=handle_send)
+    with col2:
+        st.button("🧹 Clear Chat", use_container_width=True, on_click=clear_chat)
 
 # ---------------------------------------------------------
 # 9️⃣ Upload Health Report (OCR → Chatbot only)
@@ -280,5 +278,3 @@ if selected == "Upload Health Report":
         }
         st.session_state["redirect_to"] = "HealthBot Assistant"
         st.rerun()
-
-
