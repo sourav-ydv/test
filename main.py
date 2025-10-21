@@ -141,77 +141,38 @@ if selected == 'Heart Disease Prediction':
 if selected == "Parkinson’s Prediction":
     st.title("Parkinson’s Disease Prediction using ML")
 
-    st.markdown("### Enter Voice Measurement Features (Simple Names)")
-
     col1, col2, col3, col4 = st.columns(4)  
     
     with col1:
         fo = st.text_input('Average Vocal Fundamental Frequency (Hz)')
-        
+        Jitter_Abs = st.text_input('Jitter (Abs) - Small Frequency Variations')
+        Shimmer = st.text_input('Shimmer - Variation in Amplitude')
+        APQ = st.text_input('APQ - Average Amplitude Perturbation')
+        RPDE = st.text_input('RPDE - Nonlinear Dynamical Complexity')
+        D2 = st.text_input('D2 - Dynamical Complexity Measure')
+    
     with col2:
         fhi = st.text_input('Maximum Vocal Fundamental Frequency (Hz)')
-        
+        RAP = st.text_input('RAP - Relative Average Perturbation')
+        Shimmer_dB = st.text_input('Shimmer (dB)')
+        DDA = st.text_input('DDA - Average Absolute Difference of Periods')
+        DFA = st.text_input('DFA - Signal Fractal Scaling')
+        PPE = st.text_input('PPE - Pitch Period Entropy')
+    
     with col3:
         flo = st.text_input('Minimum Vocal Fundamental Frequency (Hz)')
-        
+        PPQ = st.text_input('PPQ - Pitch Period Perturbation Quotient')
+        APQ3 = st.text_input('APQ3 - Amplitude Perturbation (3 cycles)')
+        NHR = st.text_input('NHR - Noise to Harmonic Ratio')
+        spread1 = st.text_input('Spread1 - Nonlinear Frequency Variation Measure 1')
+
     with col4:
         Jitter_percent = st.text_input('Jitter (%) - Variation in Frequency')
-        
-    with col1:
-        Jitter_Abs = st.text_input('Jitter (Abs) - Small Frequency Variations')
-        
-    with col2:
-        RAP = st.text_input('RAP - Relative Average Perturbation')
-        
-    with col3:
-        PPQ = st.text_input('PPQ - Pitch Period Perturbation Quotient')
-        
-    with col4:
         DDP = st.text_input('DDP - Difference of Differences of Periods')
-        
-    with col1:
-        Shimmer = st.text_input('Shimmer - Variation in Amplitude')
-        
-    with col2:
-        Shimmer_dB = st.text_input('Shimmer (dB)')
-        
-    with col3:
-        APQ3 = st.text_input('APQ3 - Amplitude Perturbation (3 cycles)')
-        
-    with col4:
         APQ5 = st.text_input('APQ5 - Amplitude Perturbation (5 cycles)')
-        
-    with col1:
-        APQ = st.text_input('APQ - Average Amplitude Perturbation')
-        
-    with col2:
-        DDA = st.text_input('DDA - Average Absolute Difference of Periods')
-        
-    with col3:
-        NHR = st.text_input('NHR - Noise to Harmonic Ratio')
-        
-    with col4:
         HNR = st.text_input('HNR - Harmonic to Noise Ratio')
-        
-    with col1:
-        RPDE = st.text_input('RPDE - Nonlinear Dynamical Complexity')
-        
-    with col2:
-        DFA = st.text_input('DFA - Signal Fractal Scaling')
-        
-    with col3:
-        spread1 = st.text_input('Spread1 - Nonlinear Frequency Variation Measure 1')
-        
-    with col4:
         spread2 = st.text_input('Spread2 - Nonlinear Frequency Variation Measure 2')
-        
-    with col1:
-        D2 = st.text_input('D2 - Dynamical Complexity Measure')
-        
-    with col2:
-        PPE = st.text_input('PPE - Pitch Period Entropy')
-        
-
+    
     # code for Prediction
     parkinsons_diagnosis = ''
 
@@ -360,6 +321,7 @@ if selected == "Upload Health Report":
         }
         st.session_state["redirect_to"] = "HealthBot Assistant"
         st.rerun()
+
 
 
 
