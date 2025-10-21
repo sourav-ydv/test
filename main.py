@@ -6,7 +6,6 @@ OpenAI (primary) + Gemini fallback (gemini-2.5-flash-lite)
 import pickle
 import streamlit as st
 from streamlit_option_menu import option_menu
-from openai import OpenAI
 import google.generativeai as genai
 from PIL import Image
 import pytesseract
@@ -244,37 +243,17 @@ if selected == 'HealthBot Assistant':
             st.rerun()
 
     # --- Show chat history ---
-    for i, msg in enumerate(st.session_state.chat_history):
-        msg_id = f"msg_{i}"  # unique anchor for scrolling
+    for msg in st.session_state.chat_history:
         if msg["role"] == "user":
             st.markdown(
-                f"<div id='{msg_id}' style='background:#1e1e1e;padding:10px;"
-                f"border-radius:12px;margin:8px 0;text-align:right;color:#fff;'>"
-                f"🧑 <b>You:</b> {msg['content']}</div>",
+                f"<div style='background:#1e1e1e;padding:10px;border-radius:12px;margin:8px 0;text-align:right;color:#fff;'>🧑 <b>You:</b> {msg['content']}</div>",
                 unsafe_allow_html=True
             )
         else:
             st.markdown(
-                f"<div id='{msg_id}' style='background:#2b313e;padding:10px;"
-                f"border-radius:12px;margin:8px 0;text-align:left;color:#e2e2e2;'>"
-                f"🤖 <b>HealthBot:</b> {msg['content']}</div>",
+                f"<div style='background:#2b313e;padding:10px;border-radius:12px;margin:8px 0;text-align:left;color:#e2e2e2;'>🤖 <b>HealthBot:</b> {msg['content']}</div>",
                 unsafe_allow_html=True
             )
-
-    # --- Auto-scroll to latest message ---
-    if st.session_state.chat_history:
-        latest_id = f"msg_{len(st.session_state.chat_history)-1}"
-        st.markdown(
-            f"""
-            <script>
-                var lastMsg = document.getElementById("{latest_id}");
-                if (lastMsg) {{
-                    lastMsg.scrollIntoView({{behavior: "smooth", block: "start"}});
-                }}
-            </script>
-            """,
-            unsafe_allow_html=True
-        )
 
     # --- Input field ---
     user_message = st.chat_input("💬 Type your message...")
@@ -319,7 +298,6 @@ if selected == 'HealthBot Assistant':
             st.session_state['last_prediction'] = None
             st.rerun()   # ✅ Instant clear
 
-
 # ---------------------------------------------------------
 # 9️⃣ Upload Health Report (OCR → Chatbot only)
 # ---------------------------------------------------------
@@ -342,8 +320,6 @@ if selected == "Upload Health Report":
         }
         st.session_state["redirect_to"] = "HealthBot Assistant"
         st.rerun()
-
-
 
 
 
