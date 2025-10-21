@@ -104,13 +104,13 @@ if selected == 'Heart Disease Prediction':
         sex = st.text_input('Sex (1 = Male, 0 = Female)')
         cp = st.text_input('Chest Pain Type (0–3)')
         trestbps = st.text_input('Resting Blood Pressure')
-    with col2:
         chol = st.text_input('Serum Cholesterol (mg/dl)')
+    with col2:
         fbs = st.text_input('Fasting Blood Sugar > 120 mg/dl (1 = Yes, 0 = No)')
         restecg = st.text_input('Resting ECG Results (0–2)')
         thalach = st.text_input('Maximum Heart Rate Achieved')
-    with col3:
         exang = st.text_input('Exercise Induced Angina (1 = Yes, 0 = No)')
+    with col3:
         oldpeak = st.text_input('Oldpeak (ST Depression by Exercise)')
         slope = st.text_input('Slope of Peak Exercise ST Segment (0–2)')
         ca = st.text_input('Number of Major Vessels (0–3)')
@@ -285,5 +285,6 @@ if selected == "Upload Health Report":
         }
         st.session_state["redirect_to"] = "HealthBot Assistant"
         st.rerun()
+
 
 
