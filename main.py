@@ -136,9 +136,6 @@ if selected == 'Heart Disease Prediction':
         }
 
 # ---------------------------------------------------------
-# 7️⃣ Parkinson’s Prediction
-# ---------------------------------------------------------
-# ---------------------------------------------------------
 # 7️⃣ Parkinson’s Prediction (with simplified feature names)
 # ---------------------------------------------------------
 if selected == 'Parkinson’s Prediction':
@@ -146,39 +143,90 @@ if selected == 'Parkinson’s Prediction':
 
     st.markdown("### Enter Voice Measurement Features (Simple Names)")
 
-    parkinsons_features = {
-        "Average Vocal Fundamental Frequency (Hz)": "MDVP:Fo(Hz)",
-        "Maximum Vocal Fundamental Frequency (Hz)": "MDVP:Fhi(Hz)",
-        "Minimum Vocal Fundamental Frequency (Hz)": "MDVP:Flo(Hz)",
-        "Jitter (%) - Variation in Frequency (%)": "MDVP:Jitter(%)",
-        "Jitter (Abs) - Small Frequency Variations": "MDVP:Jitter(Abs)",
-        "RAP - Relative Average Perturbation": "MDVP:RAP",
-        "PPQ - Pitch Period Perturbation Quotient": "MDVP:PPQ",
-        "DDP - Difference of Differences of Periods": "Jitter:DDP",
-        "Shimmer - Variation in Amplitude": "MDVP:Shimmer",
-        "Shimmer (dB)": "MDVP:Shimmer(dB)",
-        "APQ3 - Amplitude Perturbation Quotient (3 cycles)": "Shimmer:APQ3",
-        "APQ5 - Amplitude Perturbation Quotient (5 cycles)": "Shimmer:APQ5",
-        "APQ - Average Amplitude Perturbation": "MDVP:APQ",
-        "DDA - Average Absolute Difference of Periods": "Shimmer:DDA",
-        "NHR - Noise to Harmonic Ratio": "NHR",
-        "HNR - Harmonic to Noise Ratio": "HNR",
-        "RPDE - Nonlinear Dynamical Complexity": "RPDE",
-        "D2 - Dynamical Complexity Measure": "D2",
-        "DFA - Signal Fractal Scaling": "DFA",
-        "Spread1 - Nonlinear Frequency Variation Measure 1": "Spread1",
-        "Spread2 - Nonlinear Frequency Variation Measure 2": "Spread2",
-        "PPE - Pitch Period Entropy": "PPE"
-    }
+    col1, col2, col3, col4, col5 = st.columns(5)  
+        
+    with col1:
+        fo = st.text_input('Average Vocal Fundamental Frequency (Hz)')
+        
+    with col2:
+        fhi = st.text_input('Maximum Vocal Fundamental Frequency (Hz)')
+        
+    with col3:
+        flo = st.text_input('Minimum Vocal Fundamental Frequency (Hz)')
+        
+    with col4:
+        Jitter_percent = st.text_input('Jitter (%) - Variation in Frequency')
+        
+    with col5:
+        Jitter_Abs = st.text_input('Jitter (Abs) - Small Frequency Variations')
+        
+    with col1:
+        RAP = st.text_input('RAP - Relative Average Perturbation')
+        
+    with col2:
+        PPQ = st.text_input('PPQ - Pitch Period Perturbation Quotient')
+        
+    with col3:
+        DDP = st.text_input('DDP - Difference of Differences of Periods')
+        
+    with col4:
+        Shimmer = st.text_input('Shimmer - Variation in Amplitude')
+        
+    with col5:
+        Shimmer_dB = st.text_input('Shimmer (dB)')
+        
+    with col1:
+        APQ3 = st.text_input('APQ3 - Amplitude Perturbation (3 cycles)')
+        
+    with col2:
+        APQ5 = st.text_input('APQ5 - Amplitude Perturbation (5 cycles)')
+        
+    with col3:
+        APQ = st.text_input('APQ - Average Amplitude Perturbation')
+        
+    with col4:
+        DDA = st.text_input('DDA - Average Absolute Difference of Periods')
+        
+    with col5:
+        NHR = st.text_input('NHR - Noise to Harmonic Ratio')
+        
+    with col1:
+        HNR = st.text_input('HNR - Harmonic to Noise Ratio')
+        
+    with col2:
+        RPDE = st.text_input('RPDE - Nonlinear Dynamical Complexity')
+        
+    with col3:
+        DFA = st.text_input('DFA - Signal Fractal Scaling')
+        
+    with col4:
+        spread1 = st.text_input('Spread1 - Nonlinear Frequency Variation Measure 1')
+        
+    with col5:
+        spread2 = st.text_input('Spread2 - Nonlinear Frequency Variation Measure 2')
+        
+    with col1:
+        D2 = st.text_input('D2 - Dynamical Complexity Measure')
+        
+    with col2:
+        PPE = st.text_input('PPE - Pitch Period Entropy')
+        
+    
+    # code for Prediction
+    parkinsons_diagnosis = ''
+    
+    # creating a button for Prediction    
+    if st.button("Parkinson's Test Result"):
+        try:
+            user_input = [
+                float(fo), float(fhi), float(flo), float(Jitter_percent),
+                float(Jitter_Abs), float(RAP), float(PPQ), float(DDP),
+                float(Shimmer), float(Shimmer_dB), float(APQ3), float(APQ5),
+                float(APQ), float(DDA), float(NHR), float(HNR), float(RPDE),
+                float(DFA), float(spread1), float(spread2), float(D2), float(PPE)
+            ]
+            parkinsons_prediction = parkinsons_model.predict([user_input])
 
-    inputs = []
-    for label, feature in parkinsons_features.items():
-        value = st.number_input(label, 0.0)
-        inputs.append(value)
-
-    if st.button('Parkinson’s Test Result'):
-        user_input_p = inputs
-        park_prediction = parkinsons_model.predict([user_input_p])
         if park_prediction[0] == 1:
             st.error('The person likely has Parkinson’s Disease.')
             park_status = 'likely to have Parkinson’s Disease'
@@ -306,6 +354,7 @@ if selected == "Upload Health Report":
         }
         st.session_state["redirect_to"] = "HealthBot Assistant"
         st.rerun()
+
 
 
 
