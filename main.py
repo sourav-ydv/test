@@ -136,15 +136,15 @@ if selected == 'Heart Disease Prediction':
         }
 
 # ---------------------------------------------------------
-# 7️⃣ Parkinson’s Prediction (with simplified feature names)
+# 7️⃣ Parkinson’s Prediction (Simplified Input Labels)
 # ---------------------------------------------------------
-if selected == 'Parkinson’s Prediction':
+if selected == "Parkinson’s Prediction":
     st.title("Parkinson’s Disease Prediction using ML")
 
     st.markdown("### Enter Voice Measurement Features (Simple Names)")
 
     col1, col2, col3, col4, col5 = st.columns(5)  
-        
+    
     with col1:
         fo = st.text_input('Average Vocal Fundamental Frequency (Hz)')
         
@@ -211,10 +211,10 @@ if selected == 'Parkinson’s Prediction':
     with col2:
         PPE = st.text_input('PPE - Pitch Period Entropy')
         
-    
+
     # code for Prediction
     parkinsons_diagnosis = ''
-    
+
     # creating a button for Prediction    
     if st.button("Parkinson's Test Result"):
         try:
@@ -227,17 +227,23 @@ if selected == 'Parkinson’s Prediction':
             ]
             parkinsons_prediction = parkinsons_model.predict([user_input])
 
-        if park_prediction[0] == 1:
-            st.error('The person likely has Parkinson’s Disease.')
-            park_status = 'likely to have Parkinson’s Disease'
-        else:
-            st.success('The person is healthy.')
-            park_status = 'does not have Parkinson’s Disease'
-        st.session_state['last_prediction'] = {
-            'disease': 'Parkinson’s Disease',
-            'input': user_input_p,
-            'result': park_status
-        }
+            if parkinsons_prediction[0] == 1:
+                st.error("The person likely has Parkinson’s Disease.")
+                park_status = "likely to have Parkinson’s Disease"
+            else:
+                st.success("The person is healthy.")
+                park_status = "does not have Parkinson’s Disease"
+
+            # Save result to session state for HealthBot context
+            st.session_state['last_prediction'] = {
+                'disease': "Parkinson’s Disease",
+                'input': user_input,
+                'result': park_status
+            }
+
+        except ValueError:
+            st.error("⚠️ Please fill all fields with valid numeric values.")
+
 
 # ---------------------------------------------------------
 # 8️⃣ HealthBot Assistant
@@ -354,6 +360,7 @@ if selected == "Upload Health Report":
         }
         st.session_state["redirect_to"] = "HealthBot Assistant"
         st.rerun()
+
 
 
 
