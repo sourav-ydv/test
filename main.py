@@ -143,7 +143,7 @@ if selected == "Parkinson’s Prediction":
 
     st.markdown("### Enter Voice Measurement Features (Simple Names)")
 
-    col1, col2, col3, col4, col5 = st.columns(5)  
+    col1, col2, col3, col4 = st.columns(4)  
     
     with col1:
         fo = st.text_input('Average Vocal Fundamental Frequency (Hz)')
@@ -157,52 +157,52 @@ if selected == "Parkinson’s Prediction":
     with col4:
         Jitter_percent = st.text_input('Jitter (%) - Variation in Frequency')
         
-    with col5:
+    with col1:
         Jitter_Abs = st.text_input('Jitter (Abs) - Small Frequency Variations')
         
-    with col1:
+    with col2:
         RAP = st.text_input('RAP - Relative Average Perturbation')
         
-    with col2:
+    with col3:
         PPQ = st.text_input('PPQ - Pitch Period Perturbation Quotient')
         
-    with col3:
+    with col4:
         DDP = st.text_input('DDP - Difference of Differences of Periods')
         
-    with col4:
+    with col1:
         Shimmer = st.text_input('Shimmer - Variation in Amplitude')
         
-    with col5:
+    with col2:
         Shimmer_dB = st.text_input('Shimmer (dB)')
         
-    with col1:
+    with col3:
         APQ3 = st.text_input('APQ3 - Amplitude Perturbation (3 cycles)')
         
-    with col2:
+    with col4:
         APQ5 = st.text_input('APQ5 - Amplitude Perturbation (5 cycles)')
         
-    with col3:
+    with col1:
         APQ = st.text_input('APQ - Average Amplitude Perturbation')
         
-    with col4:
+    with col2:
         DDA = st.text_input('DDA - Average Absolute Difference of Periods')
         
-    with col5:
+    with col3:
         NHR = st.text_input('NHR - Noise to Harmonic Ratio')
         
-    with col1:
+    with col4:
         HNR = st.text_input('HNR - Harmonic to Noise Ratio')
         
-    with col2:
+    with col1:
         RPDE = st.text_input('RPDE - Nonlinear Dynamical Complexity')
         
-    with col3:
+    with col2:
         DFA = st.text_input('DFA - Signal Fractal Scaling')
         
-    with col4:
+    with col3:
         spread1 = st.text_input('Spread1 - Nonlinear Frequency Variation Measure 1')
         
-    with col5:
+    with col4:
         spread2 = st.text_input('Spread2 - Nonlinear Frequency Variation Measure 2')
         
     with col1:
@@ -360,6 +360,7 @@ if selected == "Upload Health Report":
         }
         st.session_state["redirect_to"] = "HealthBot Assistant"
         st.rerun()
+
 
 
 
