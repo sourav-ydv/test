@@ -138,21 +138,42 @@ if selected == 'Heart Disease Prediction':
 # ---------------------------------------------------------
 # 7️⃣ Parkinson’s Prediction
 # ---------------------------------------------------------
+# ---------------------------------------------------------
+# 7️⃣ Parkinson’s Prediction (with simplified feature names)
+# ---------------------------------------------------------
 if selected == 'Parkinson’s Prediction':
     st.title("Parkinson’s Disease Prediction using ML")
 
-    st.markdown("### Enter Voice Measurement Features")
-    parkinsons_features = [
-        "MDVP:Fo(Hz)", "MDVP:Fhi(Hz)", "MDVP:Flo(Hz)", "MDVP:Jitter(%)",
-        "MDVP:Jitter(Abs)", "MDVP:RAP", "MDVP:PPQ", "Jitter:DDP",
-        "MDVP:Shimmer", "MDVP:Shimmer(dB)", "Shimmer:APQ3", "Shimmer:APQ5",
-        "MDVP:APQ", "Shimmer:DDA", "NHR", "HNR", "RPDE", "D2", "DFA",
-        "Spread1", "Spread2", "PPE"
-    ]
+    st.markdown("### Enter Voice Measurement Features (Simple Names)")
+
+    parkinsons_features = {
+        "Average Vocal Fundamental Frequency (Hz)": "MDVP:Fo(Hz)",
+        "Maximum Vocal Fundamental Frequency (Hz)": "MDVP:Fhi(Hz)",
+        "Minimum Vocal Fundamental Frequency (Hz)": "MDVP:Flo(Hz)",
+        "Jitter (%) - Variation in Frequency (%)": "MDVP:Jitter(%)",
+        "Jitter (Abs) - Small Frequency Variations": "MDVP:Jitter(Abs)",
+        "RAP - Relative Average Perturbation": "MDVP:RAP",
+        "PPQ - Pitch Period Perturbation Quotient": "MDVP:PPQ",
+        "DDP - Difference of Differences of Periods": "Jitter:DDP",
+        "Shimmer - Variation in Amplitude": "MDVP:Shimmer",
+        "Shimmer (dB)": "MDVP:Shimmer(dB)",
+        "APQ3 - Amplitude Perturbation Quotient (3 cycles)": "Shimmer:APQ3",
+        "APQ5 - Amplitude Perturbation Quotient (5 cycles)": "Shimmer:APQ5",
+        "APQ - Average Amplitude Perturbation": "MDVP:APQ",
+        "DDA - Average Absolute Difference of Periods": "Shimmer:DDA",
+        "NHR - Noise to Harmonic Ratio": "NHR",
+        "HNR - Harmonic to Noise Ratio": "HNR",
+        "RPDE - Nonlinear Dynamical Complexity": "RPDE",
+        "D2 - Dynamical Complexity Measure": "D2",
+        "DFA - Signal Fractal Scaling": "DFA",
+        "Spread1 - Nonlinear Frequency Variation Measure 1": "Spread1",
+        "Spread2 - Nonlinear Frequency Variation Measure 2": "Spread2",
+        "PPE - Pitch Period Entropy": "PPE"
+    }
 
     inputs = []
-    for feature in parkinsons_features:
-        value = st.number_input(feature, 0.0)
+    for label, feature in parkinsons_features.items():
+        value = st.number_input(label, 0.0)
         inputs.append(value)
 
     if st.button('Parkinson’s Test Result'):
@@ -285,6 +306,7 @@ if selected == "Upload Health Report":
         }
         st.session_state["redirect_to"] = "HealthBot Assistant"
         st.rerun()
+
 
 
 
