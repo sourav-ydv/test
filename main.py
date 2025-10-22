@@ -315,29 +315,92 @@ if selected == "Parkinson’s Prediction":
 if selected == 'HealthBot Assistant':
     st.title("🤖 AI HealthBot Assistant")
 
+    try:
+        genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+    except Exception:
+        st.error("⚠️ Gemini API key missing or invalid. Please check your configuration.")
+        st.stop()
+
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
 
+    # --- Auto-reply if OCR uploaded ---
+    last_pred = st.session_state.get("last_prediction", None)
+    if isinstance(last_pred, dict) and last_pred.get("disease") == "General Report":
+        report_text = last_pred["result"]
+        if not any(msg["content"] == report_text for msg in st.session_state.chat_history):
+            st.session_state.chat_history.append({"role": "user", "content": report_text})
+            system_prompt = (
+                "You are a helpful AI health assistant named HealthBot. "
+                "Analyze the uploaded health report text. "
+                "Provide structured insights with: Findings, Risks, Suggestions. "
+                "Do not prescribe medicine."
+            )
+            full_prompt = f"{system_prompt}\n\nHealth Report:\n{report_text}"
+            try:
+                gemini_model = genai.GenerativeModel("gemini-2.0-flash-lite-preview")
+                response = gemini_model.generate_content(full_prompt)
+                reply = response.text
+            except Exception as e:
+                reply = f"⚠️ Gemini API error: {e}"
+            st.session_state.chat_history.append({"role": "assistant", "content": reply})
+            st.rerun()
+
+    # --- Show chat history ---
     for msg in st.session_state.chat_history:
         if msg["role"] == "user":
-            st.markdown(f"<div style='background:#1e1e1e;padding:10px;border-radius:12px;margin:5px;text-align:right;color:#fff;'>🧑 {msg['content']}</div>", unsafe_allow_html=True)
+            st.markdown(
+                f"<div style='background:#1e1e1e;padding:10px;border-radius:12px;margin:8px 0;text-align:right;color:#fff;'>🧑 <b>You:</b> {msg['content']}</div>",
+                unsafe_allow_html=True
+            )
         else:
-            st.markdown(f"<div style='background:#2b313e;padding:10px;border-radius:12px;margin:5px;text-align:left;color:#e2e2e2;'>🤖 {msg['content']}</div>", unsafe_allow_html=True)
+            st.markdown(
+                f"<div style='background:#2b313e;padding:10px;border-radius:12px;margin:8px 0;text-align:left;color:#e2e2e2;'>🤖 <b>HealthBot:</b> {msg['content']}</div>",
+                unsafe_allow_html=True
+            )
 
+    # --- Input field ---
     user_message = st.chat_input("💬 Type your message...")
+
     if user_message:
         st.session_state.chat_history.append({"role": "user", "content": user_message})
-        # Replace with Gemini API call
-        reply = f"(Gemini/AI reply to: {user_message})"
-        st.session_state.chat_history.append({"role": "assistant", "content": reply})
-        save_history(st.session_state["user_id"], "Chat", [], "Chat Update", st.session_state["chat_history"])
-        st.rerun()
 
+        # Add last prediction context
+        last_pred = st.session_state.get('last_prediction', None)
+        user_context = ""
+        if isinstance(last_pred, dict) and last_pred.get('disease') != "General Report":
+            user_context = (
+                f"\nPrevious Test Performed: {last_pred['disease']}\n"
+                f"Input Values: {last_pred['input']}\n"
+                f"Prediction Result: {last_pred['result']}\n"
+            )
+
+        full_prompt = (
+            "You are HealthBot, a safe AI assistant.\n"
+            "Always give structured and detailed answers with:\n"
+            "- Findings: interpret the test values.\n"
+            "- Risks: explain possible health implications.\n"
+            "- Suggestions: lifestyle, diet, or follow-up actions.\n"
+            "Never prescribe medicines.\n\n"
+            f"{user_context}\nUser Question: {user_message}"
+        )
+
+        try:
+            gemini_model = genai.GenerativeModel("gemini-2.0-flash-lite-preview")
+            response = gemini_model.generate_content(full_prompt)
+            reply = response.text
+        except Exception as e:
+            reply = f"⚠️ Gemini API error: {e}"
+
+        st.session_state.chat_history.append({"role": "assistant", "content": reply})
+        st.rerun()   # ✅ Refresh immediately so no delay
+
+    # --- Clear Chat button in sidebar ---
     with st.sidebar:
-        if st.button("🧹 Clear Chat", key="clear_chat"):
+        if st.button("🧹 Clear Chat"):
             st.session_state.chat_history = []
             st.session_state['last_prediction'] = None
-            st.rerun()
+            st.rerun()   # ✅ Instant clear
 
 # ---------------------------------------------------------
 # 9️⃣ Upload Health Report
@@ -356,3 +419,4 @@ if selected == "Upload Health Report":
         }
         st.session_state["redirect_to"] = "HealthBot Assistant"
         st.rerun()
+
