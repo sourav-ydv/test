@@ -24,12 +24,16 @@ def db_conn():
 
 def init_db():
     con = db_conn(); cur = con.cursor()
+    
+    # Users table
     cur.execute("""
     CREATE TABLE IF NOT EXISTS users(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL
     )""")
+    
+    # Predictions table
     cur.execute("""
     CREATE TABLE IF NOT EXISTS predictions(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -40,17 +44,26 @@ def init_db():
       timestamp TEXT NOT NULL,
       FOREIGN KEY(user_id) REFERENCES users(id)
     )""")
+    
+    # Chats table (base schema)
     cur.execute("""
     CREATE TABLE IF NOT EXISTS chats(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
-      title TEXT DEFAULT '',
       messages TEXT NOT NULL,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
       FOREIGN KEY(user_id) REFERENCES users(id)
     )""")
+    
+    # ✅ Ensure 'title' column exists (auto-fix if missing)
+    try:
+        cur.execute("ALTER TABLE chats ADD COLUMN title TEXT DEFAULT ''")
+    except sqlite3.OperationalError:
+        pass  # Column already exists, ignore
+    
     con.commit(); con.close()
+
 
 def hash_password(pw: str) -> str:
     return hashlib.sha256(pw.encode()).hexdigest()
@@ -480,3 +493,4 @@ if selected == "Past Predictions":
                 st.write("**Input Values:**")
                 st.code(json.dumps(vals, indent=2))
                 st.write("**Result:**", res)
+
