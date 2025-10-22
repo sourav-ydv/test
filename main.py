@@ -45,7 +45,7 @@ def init_db():
       FOREIGN KEY(user_id) REFERENCES users(id)
     )""")
     
-    # Chats table (base schema)
+    # Chats table (base schema if first time)
     cur.execute("""
     CREATE TABLE IF NOT EXISTS chats(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -56,11 +56,14 @@ def init_db():
       FOREIGN KEY(user_id) REFERENCES users(id)
     )""")
     
-    # ✅ Ensure 'title' column exists (auto-fix if missing)
+    # ✅ Ensure 'title' column exists
     try:
         cur.execute("ALTER TABLE chats ADD COLUMN title TEXT DEFAULT ''")
+        con.commit()
+        # Migration step → give default names for old chats
+        cur.execute("UPDATE chats SET title = 'Old Session #' || id WHERE title IS NULL OR title = ''")
     except sqlite3.OperationalError:
-        pass  # Column already exists, ignore
+        pass  # Column already exists
     
     con.commit(); con.close()
 
@@ -493,4 +496,5 @@ if selected == "Past Predictions":
                 st.write("**Input Values:**")
                 st.code(json.dumps(vals, indent=2))
                 st.write("**Result:**", res)
+
 
