@@ -137,11 +137,38 @@ with st.sidebar:
         default_index=0
     )
 
-    st.subheader("📜 Recent History")
+    st.subheader("📜 Past Predictions & Chats")
     history = load_history(st.session_state["user_id"])
     if history:
-        for h in history:
-            st.markdown(f"- **{h[0]}** → {h[2]} ({h[4]})")
+        for i, h in enumerate(history):
+            with st.expander(f"{h[0]} → {h[2]} ({h[4]})", expanded=False):
+                st.write("**Input Values:**", h[1])
+                st.write("**Result:**", h[2])
+                
+                # Show saved chat history
+                try:
+                    chat_hist = ast.literal_eval(h[3])
+                    if isinstance(chat_hist, list) and len(chat_hist) > 0:
+                        st.markdown("**Chat History:**")
+                        for msg in chat_hist:
+                            role = "🧑 You" if msg["role"] == "user" else "🤖 Bot"
+                            st.markdown(f"- **{role}:** {msg['content']}")
+                    else:
+                        st.info("No chat history saved for this record.")
+                except Exception:
+                    st.warning("⚠️ Could not load chat history.")
+                
+                # Restore button
+                if st.button(f"🔄 Restore Session {i+1}", key=f"restore_{i}"):
+                    st.session_state["chat_history"] = ast.literal_eval(h[3]) if h[3] else []
+                    st.session_state["last_prediction"] = {
+                        "disease": h[0],
+                        "input": h[1],
+                        "result": h[2]
+                    }
+                    st.session_state["redirect_to"] = "HealthBot Assistant"
+                    st.rerun()
+
 
 # ---------------------------------------------------------
 # OCR Utility
@@ -419,4 +446,5 @@ if selected == "Upload Health Report":
         }
         st.session_state["redirect_to"] = "HealthBot Assistant"
         st.rerun()
+
 
