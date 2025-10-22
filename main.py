@@ -445,7 +445,7 @@ if selected == 'HealthBot Assistant':
         # List sessions with load buttons
         if sessions:
             for idx, (cid, msgs, created, updated) in enumerate(sessions, start=1):
-                label = f"Session #{cid} • Updated: {updated}"
+                label = f"Session #{idx} • Updated: {updated}"
                 cols = st.columns([4,1,1])
                 with cols[0]:
                     st.caption(label)
@@ -574,3 +574,4 @@ if selected == "Past Predictions":
                 st.write("**Input Values:**")
                 st.code(json.dumps(vals, indent=2))
                 st.write("**Result:**", res)
+
