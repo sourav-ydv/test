@@ -1,9 +1,8 @@
 streamlit
 streamlit-option-menu
-Pillow
+pillow
 pytesseract
 google-generativeai
 pandas
 numpy
 scikit-learn
-sqlite3-binary
