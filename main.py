@@ -226,6 +226,13 @@ def extract_text_from_image(uploaded_file):
     image = Image.open(uploaded_file)
     text = pytesseract.image_to_string(image)
     return text
+
+# ---------------------------------------------------------
+# 🔄 Redirect Handling
+# ---------------------------------------------------------
+if "redirect_to" in st.session_state and st.session_state["redirect_to"]:
+    selected = st.session_state["redirect_to"]
+    st.session_state["redirect_to"] = None
     
 # ---------------------------------------------------------
 # 5️⃣ Diabetes Prediction
@@ -494,3 +501,4 @@ if selected == "Past Predictions":
                 st.write("**Input Values:**")
                 st.code(json.dumps(vals, indent=2))
                 st.write("**Result:**", res)
+
