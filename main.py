@@ -423,10 +423,26 @@ if selected == 'HealthBot Assistant':
                 tag = "📝" if ctype == "report" else "💬"
                 display_title = title if title else "Untitled"
                 short_title = display_title[:25] + ("..." if len(display_title) > 25 else "")
-                if st.button(f"{tag} {short_title}", key=f"chat_{cid}"):
-                    st.session_state.chat_session_id = cid
-                    st.session_state.chat_history = msgs
-                    st.rerun()
+
+                cols = st.columns([6,1])
+                with cols[0]:
+                    if st.button(f"{tag} {short_title}", key=f"chat_{cid}"):
+                        st.session_state.chat_session_id = cid
+                        st.session_state.chat_history = msgs
+                        st.rerun()
+                with cols[1]:
+                    action = st.selectbox("⋮", ["⋮","Rename","Delete"], key=f"menu_{cid}")
+                    if action == "Rename":
+                        new_name = st.text_input("Rename session", value=display_title, key=f"rename_{cid}")
+                        if st.button("Save", key=f"save_rename_{cid}"):
+                            save_chat_messages(cid, msgs, title=new_name)
+                            st.rerun()
+                    elif action == "Delete":
+                        delete_chat(cid)
+                        if st.session_state.chat_session_id == cid:
+                            st.session_state.chat_history = []
+                            st.session_state.chat_session_id = create_chat_session(st.session_state.user_id, title="New Chat")
+                        st.rerun()
 
         st.markdown("---")
         if st.button("➕ New Chat", key="new_chat_btn"):
@@ -437,11 +453,7 @@ if selected == 'HealthBot Assistant':
             st.session_state.chat_history = []
             save_chat_messages(st.session_state.chat_session_id, [])
             st.rerun()
-        if st.button("🗑️ Delete Current Chat", key="delete_chat_btn"):
-            delete_chat(st.session_state.chat_session_id)
-            st.session_state.chat_history = []
-            st.session_state.chat_session_id = create_chat_session(st.session_state.user_id, title="New Chat")
-            st.rerun()
+
 
     # --- Show chat history ---
     for msg in st.session_state.chat_history:
