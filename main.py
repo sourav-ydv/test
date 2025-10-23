@@ -24,16 +24,16 @@ def db_conn():
 
 def init_db():
     con = db_conn(); cur = con.cursor()
-    
-    # Users table
+
+    # Users
     cur.execute("""
     CREATE TABLE IF NOT EXISTS users(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL
     )""")
-    
-    # Predictions table
+
+    # Predictions
     cur.execute("""
     CREATE TABLE IF NOT EXISTS predictions(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -44,8 +44,8 @@ def init_db():
       timestamp TEXT NOT NULL,
       FOREIGN KEY(user_id) REFERENCES users(id)
     )""")
-    
-    # Chats table (base schema if first time)
+
+    # Chats (base schema)
     cur.execute("""
     CREATE TABLE IF NOT EXISTS chats(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -55,18 +55,21 @@ def init_db():
       updated_at TEXT NOT NULL,
       FOREIGN KEY(user_id) REFERENCES users(id)
     )""")
-    
-    # ✅ Ensure 'title' column exists
+
+    # ✅ Add missing columns (migration safe)
     try:
         cur.execute("ALTER TABLE chats ADD COLUMN title TEXT DEFAULT ''")
-        con.commit()
-        # Migration step → give default names for old chats
-        cur.execute("UPDATE chats SET title = 'Old Session #' || id WHERE title IS NULL OR title = ''")
     except sqlite3.OperationalError:
-        pass  # Column already exists
-    
-    con.commit(); con.close()
+        pass
+    try:
+        cur.execute("ALTER TABLE chats ADD COLUMN type TEXT DEFAULT 'normal'")
+    except sqlite3.OperationalError:
+        pass
 
+    # ✅ Migrate old rows (set titles if empty)
+    cur.execute("UPDATE chats SET title = 'Old Session #' || id WHERE title IS NULL OR title = ''")
+
+    con.commit(); con.close()
 
 def hash_password(pw: str) -> str:
     return hashlib.sha256(pw.encode()).hexdigest()
@@ -112,12 +115,12 @@ def load_predictions(user_id: int):
     con.close()
     return [(d, json.loads(inp), r, ts) for (d, inp, r, ts) in rows]
 
-def create_chat_session(user_id: int, title="New Chat") -> int:
+def create_chat_session(user_id: int, title="New Chat", chat_type="normal") -> int:
     con = db_conn(); cur = con.cursor()
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     cur.execute(
-        "INSERT INTO chats(user_id,title,messages,created_at,updated_at) VALUES(?,?,?,?,?)",
-        (user_id, title, json.dumps([]), now, now)
+        "INSERT INTO chats(user_id,title,type,messages,created_at,updated_at) VALUES(?,?,?,?,?,?)",
+        (user_id, title, chat_type, json.dumps([]), now, now)
     )
     chat_id = cur.lastrowid
     con.commit(); con.close()
@@ -126,14 +129,14 @@ def create_chat_session(user_id: int, title="New Chat") -> int:
 def load_chat_sessions(user_id: int):
     con = db_conn(); cur = con.cursor()
     cur.execute("""
-        SELECT id, title, messages, created_at, updated_at
+        SELECT id, title, type, messages, created_at, updated_at
         FROM chats
         WHERE user_id=?
         ORDER BY updated_at DESC
     """, (user_id,))
     rows = cur.fetchall()
     con.close()
-    return [(cid, title, json.loads(msgs), c_at, u_at) for (cid, title, msgs, c_at, u_at) in rows]
+    return [(cid, title, ctype, json.loads(msgs), c_at, u_at) for (cid, title, ctype, msgs, c_at, u_at) in rows]
 
 def save_chat_messages(chat_id: int, messages: list, title=None):
     con = db_conn(); cur = con.cursor()
@@ -150,6 +153,13 @@ def delete_chat(chat_id: int):
     con = db_conn(); cur = con.cursor()
     cur.execute("DELETE FROM chats WHERE id=?", (chat_id,))
     con.commit(); con.close()
+
+def load_chat_by_id(chat_id: int):
+    con = db_conn(); cur = con.cursor()
+    cur.execute("SELECT messages FROM chats WHERE id=?", (chat_id,))
+    row = cur.fetchone()
+    con.close()
+    return json.loads(row[0]) if row else []
 
 # =========================
 # 1) Models + Page Config
@@ -177,7 +187,7 @@ if "user_id" not in st.session_state:
                 sessions = load_chat_sessions(uid)
                 if sessions:
                     st.session_state.chat_session_id = sessions[0][0]
-                    st.session_state.chat_history = sessions[0][2]
+                    st.session_state.chat_history = sessions[0][3]
                 else:
                     st.session_state.chat_session_id = create_chat_session(uid)
                     st.session_state.chat_history = []
@@ -216,14 +226,7 @@ def extract_text_from_image(uploaded_file):
     image = Image.open(uploaded_file)
     text = pytesseract.image_to_string(image)
     return text
-
-# =========================
-# 5) Redirect Handling
-# =========================
-if "redirect_to" in st.session_state and st.session_state["redirect_to"]:
-    selected = st.session_state["redirect_to"]
-    st.session_state["redirect_to"] = None
-
+    
 # ---------------------------------------------------------
 # 5️⃣ Diabetes Prediction
 # ---------------------------------------------------------
@@ -400,7 +403,8 @@ if selected == 'HealthBot Assistant':
         st.markdown("---"); st.subheader("💬 Chat Sessions")
         sessions = load_chat_sessions(st.session_state.user_id)
         if sessions:
-            for idx, (cid, title, msgs, created, updated) in enumerate(sessions, start=1):
+            for idx, (cid, title, ctype, msgs, created, updated) in enumerate(sessions, start=1):
+                tag = "📝 Report" if ctype == "report" else "💬 Chat"
                 session_name = title if title else f"Session #{idx}"
                 cols = st.columns([3,1,1])
                 with cols[0]:
@@ -414,8 +418,7 @@ if selected == 'HealthBot Assistant':
                         st.rerun()
                 with cols[2]:
                     if st.button("🗑️", key=f"del_chat_{cid}"):
-                        delete_chat(cid)
-                        st.rerun()
+                        delete_chat(cid); st.rerun()
         if st.button("➕ New Chat", key="new_chat_btn"):
             st.session_state.chat_session_id = create_chat_session(st.session_state.user_id)
             st.session_state.chat_history = []
@@ -423,24 +426,6 @@ if selected == 'HealthBot Assistant':
         if st.button("🧹 Clear Current Chat", key="clear_chat_btn"):
             st.session_state.chat_history = []
             save_chat_messages(st.session_state.chat_session_id, [])
-            st.rerun()
-
-    # --- Auto-reply if OCR uploaded (goes only to current session) ---
-    last_pred = st.session_state.get("last_prediction", None)
-    if isinstance(last_pred, dict) and last_pred.get("disease") == "General Report":
-        report_text = last_pred["result"]
-        history = st.session_state.chat_history
-        if not any(msg.get("content") == report_text for msg in history):
-            history.append({"role":"user","content":report_text})
-            try:
-                gemini_model = genai.GenerativeModel("gemini-2.0-flash-lite-preview")
-                response = gemini_model.generate_content(report_text)
-                reply = response.text
-            except Exception as e:
-                reply = f"⚠️ Gemini API error: {e}"
-            history.append({"role":"assistant","content":reply})
-            st.session_state.chat_history = history
-            save_chat_messages(st.session_state.chat_session_id, history)
             st.rerun()
 
     # --- Show chat history ---
@@ -476,7 +461,20 @@ if selected == "Upload Health Report":
         extracted_text = extract_text_from_image(uploaded_file)
         st.subheader("📄 Extracted Text")
         st.text(extracted_text)
-        st.session_state['last_prediction'] = {"disease":"General Report","input":[],"result":extracted_text}
+
+        # Create dedicated Report Analysis chat
+        report_session_id = create_chat_session(st.session_state.user_id, title="Report Analysis", chat_type="report")
+        history = [{"role":"user","content":extracted_text}]
+        try:
+            gemini_model = genai.GenerativeModel("gemini-2.0-flash-lite-preview")
+            response = gemini_model.generate_content(extracted_text)
+            reply = response.text
+        except Exception as e:
+            reply = f"⚠️ Gemini API error: {e}"
+        history.append({"role":"assistant","content":reply})
+        save_chat_messages(report_session_id, history)
+        st.session_state.chat_session_id = report_session_id
+        st.session_state.chat_history = history
         st.session_state["redirect_to"] = "HealthBot Assistant"
         st.rerun()
 
@@ -496,5 +494,3 @@ if selected == "Past Predictions":
                 st.write("**Input Values:**")
                 st.code(json.dumps(vals, indent=2))
                 st.write("**Result:**", res)
-
-
