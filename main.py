@@ -5,7 +5,6 @@
 
 import streamlit as st
 import pickle
-import re
 import sqlite3
 import hashlib
 import json
@@ -403,26 +402,12 @@ if selected == 'HealthBot Assistant':
         st.error("⚠️ Gemini API key missing or invalid.")
         st.stop()
         
+    # --- Auto Title Generator ---
     def generate_session_title(message: str, chat_type="normal") -> str:
-        # Lowercase → split words
-        words = re.findall(r"\w+", message.lower())
-        
-        # Remove common filler words
-        stopwords = {"the","is","are","about","tell","explain","what","give","show","me","of","in","on","and","to","for"}
-        keywords = [w.capitalize() for w in words if w not in stopwords]
-    
-        if not keywords:
-            return "New Chat"
-    
-        # Pick top 2–3 keywords
-        title = " ".join(keywords[:3])
-    
-        # For reports → add prefix
         if chat_type == "report":
-            return "Report: " + title
-    
-        return title
-
+            return "Report: " + (message[:25] + "..." if len(message) > 25 else message)
+        else:
+            return message[:25] + ("..." if len(message) > 25 else "")
 
     if "chat_session_id" not in st.session_state:
         st.session_state.chat_session_id = create_chat_session(st.session_state.user_id, title="New Chat")
@@ -537,6 +522,7 @@ if selected == "Past Predictions":
                 st.write("**Input Values:**")
                 st.code(json.dumps(vals, indent=2))
                 st.write("**Result:**", res)
+
 
 
 
