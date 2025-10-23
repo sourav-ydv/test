@@ -395,44 +395,52 @@ if selected == "Parkinson’s Prediction":
 # =========================
 if selected == 'HealthBot Assistant':
     st.title("🤖 AI HealthBot Assistant")
+
     try:
         genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
     except Exception:
         st.error("⚠️ Gemini API key missing or invalid.")
         st.stop()
 
+    # --- Auto Title Generator ---
+    def generate_session_title(message: str, chat_type="normal") -> str:
+        if chat_type == "report":
+            return "Report: " + (message[:25] + "..." if len(message) > 25 else message)
+        else:
+            return message[:25] + ("..." if len(message) > 25 else "")
+
     if "chat_session_id" not in st.session_state:
-        st.session_state.chat_session_id = create_chat_session(st.session_state.user_id)
+        st.session_state.chat_session_id = create_chat_session(st.session_state.user_id, title="New Chat")
         st.session_state.chat_history = []
 
-    # --- Sidebar Chat Sessions ---
+    # --- Sidebar Chat Sessions (ChatGPT style) ---
     with st.sidebar:
-        st.markdown("---"); st.subheader("💬 Chat Sessions")
+        st.markdown("### 💬 Chats")
         sessions = load_chat_sessions(st.session_state.user_id)
+
         if sessions:
-            for idx, (cid, title, ctype, msgs, created, updated) in enumerate(sessions, start=1):
-                tag = "📝 Report" if ctype == "report" else "💬 Chat"
-                session_name = title if title else f"Session #{idx}"
-                cols = st.columns([3,1,1])
-                with cols[0]:
-                    new_title = st.text_input("", value=session_name, key=f"title_{cid}")
-                    if new_title != session_name:
-                        save_chat_messages(cid, msgs, title=new_title)
-                with cols[1]:
-                    if st.button("Load", key=f"load_chat_{cid}"):
-                        st.session_state.chat_session_id = cid
-                        st.session_state.chat_history = msgs
-                        st.rerun()
-                with cols[2]:
-                    if st.button("🗑️", key=f"del_chat_{cid}"):
-                        delete_chat(cid); st.rerun()
+            for cid, title, ctype, msgs, created, updated in sessions:
+                tag = "📝" if ctype == "report" else "💬"
+                display_title = title if title else "Untitled"
+                short_title = display_title[:25] + ("..." if len(display_title) > 25 else "")
+                if st.button(f"{tag} {short_title}", key=f"chat_{cid}"):
+                    st.session_state.chat_session_id = cid
+                    st.session_state.chat_history = msgs
+                    st.rerun()
+
+        st.markdown("---")
         if st.button("➕ New Chat", key="new_chat_btn"):
-            st.session_state.chat_session_id = create_chat_session(st.session_state.user_id)
+            st.session_state.chat_session_id = create_chat_session(st.session_state.user_id, title="New Chat")
             st.session_state.chat_history = []
             st.rerun()
         if st.button("🧹 Clear Current Chat", key="clear_chat_btn"):
             st.session_state.chat_history = []
             save_chat_messages(st.session_state.chat_session_id, [])
+            st.rerun()
+        if st.button("🗑️ Delete Current Chat", key="delete_chat_btn"):
+            delete_chat(st.session_state.chat_session_id)
+            st.session_state.chat_history = []
+            st.session_state.chat_session_id = create_chat_session(st.session_state.user_id, title="New Chat")
             st.rerun()
 
     # --- Show chat history ---
@@ -447,16 +455,29 @@ if selected == 'HealthBot Assistant':
     if user_message:
         history = st.session_state.chat_history
         history.append({"role":"user","content":user_message})
+
+        # Auto-generate title if still default
+        current_id = st.session_state.chat_session_id
+        sessions = load_chat_sessions(st.session_state.user_id)
+        current_title = [t for (cid, t, tp, m, c, u) in sessions if cid==current_id][0]
+        if current_title in ("New Chat", "", None):
+            auto_title = generate_session_title(user_message)
+            save_chat_messages(current_id, history, title=auto_title)
+        else:
+            save_chat_messages(current_id, history)
+
         try:
             gemini_model = genai.GenerativeModel("gemini-2.0-flash-lite-preview")
             response = gemini_model.generate_content(user_message)
             reply = response.text
         except Exception as e:
             reply = f"⚠️ Gemini API error: {e}"
+
         history.append({"role":"assistant","content":reply})
         st.session_state.chat_history = history
-        save_chat_messages(st.session_state.chat_session_id, history)
+        save_chat_messages(current_id, history)
         st.rerun()
+
 
 # =========================
 # 10) Upload Health Report
@@ -501,4 +522,5 @@ if selected == "Past Predictions":
                 st.write("**Input Values:**")
                 st.code(json.dumps(vals, indent=2))
                 st.write("**Result:**", res)
+
 
