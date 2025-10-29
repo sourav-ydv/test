@@ -7,11 +7,16 @@ import numpy as np
 import pickle
 import pandas as pd
 import streamlit as st
+from tensorflow import keras
 from tensorflow.keras.models import load_model
 from tensorflow.keras.layers import LeakyReLU
 
 
-ann = load_model("churn_ann_model.keras")
+@st.cache_resource
+def load_ann():
+    return keras.models.load_model("churn_ann_model")   # <-- folder
+
+ann = load_ann()
 with open("preprocessor.pkl", "rb") as f:
     preprocessor = pickle.load(f)
 
@@ -94,4 +99,5 @@ if st.button("Predict Churn"):
 
         except Exception as e:
             st.error(f"Error in prediction: {e}")
+
 
