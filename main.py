@@ -12,9 +12,7 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.layers import LeakyReLU
 
 
-@st.cache_resource
-def load_ann():
-    return keras.models.load_model("churn_ann_model")   # <-- folder
+ann = keras.models.load_model("churn_ann_model")   # correct
 
 ann = load_ann()
 with open("preprocessor.pkl", "rb") as f:
@@ -99,5 +97,6 @@ if st.button("Predict Churn"):
 
         except Exception as e:
             st.error(f"Error in prediction: {e}")
+
 
 
