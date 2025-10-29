@@ -11,6 +11,21 @@ from tensorflow import keras
 from tensorflow.keras.models import load_model
 from tensorflow.keras.layers import LeakyReLU
 
+st.set_page_config(layout="wide")
+
+st.markdown(
+    """
+    <style>
+    .block-container {
+        max-width: 70% !important;
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 @st.cache_resource
 def load_ann():
     return keras.models.load_model("churn_ann_model.keras")
@@ -89,6 +104,7 @@ if st.button("Predict Churn"):
 
         except Exception as e:
             st.error(f"Error in prediction: {e}")
+
 
 
 
