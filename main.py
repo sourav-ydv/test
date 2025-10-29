@@ -69,15 +69,24 @@ if st.button("Predict Churn"):
         st.error("⚠️ Please fill all fields before prediction.")
     else:
         try:
-            # Build dictionary input (raw form, like training data)
             input_dict = {
+                "gender": "Female",             # default
+                "SeniorCitizen": 0,
+                "Partner": "No",
+                "Dependents": "No",
+                "tenure": tenure,
+                "PhoneService": "Yes",
+                "MultipleLines": "No",
+                "InternetService": InternetService,
+                "OnlineSecurity": OnlineSecurity,
+                "OnlineBackup": "No",           # default
+                "DeviceProtection": "No",       # default
+                "TechSupport": TechSupport,
+                "StreamingTV": "No",            # default
+                "StreamingMovies": "No",        # default
                 "Contract": Contract,
                 "PaperlessBilling": PaperlessBilling,
                 "PaymentMethod": PaymentMethod,
-                "InternetService": InternetService,
-                "OnlineSecurity": OnlineSecurity,
-                "TechSupport": TechSupport,
-                "tenure": tenure,
                 "MonthlyCharges": MonthlyCharges,
                 "TotalCharges": TotalCharges
             }
@@ -87,3 +96,4 @@ if st.button("Predict Churn"):
 
         except Exception as e:
             st.error(f"Error in prediction: {e}")
+
