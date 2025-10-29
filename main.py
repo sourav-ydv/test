@@ -10,10 +10,8 @@ import streamlit as st
 from tensorflow.keras.models import load_model
 from tensorflow.keras.layers import LeakyReLU
 
-# ============================
-# Load ANN & Preprocessor
-# ============================
-ann = load_model("churn_ann_model.h5", custom_objects={"LeakyReLU": LeakyReLU})
+
+ann = load_model("churn_ann_model.keras")
 with open("preprocessor.pkl", "rb") as f:
     preprocessor = pickle.load(f)
 
