@@ -1,8 +1,6 @@
 streamlit
-streamlit-option-menu
-pillow
-pytesseract
-google-generativeai
-pandas
 numpy
+pandas
 scikit-learn
+tensorflow
+xgboost
