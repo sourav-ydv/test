@@ -29,9 +29,9 @@ def churn_prediction(input_dict):
     prob = ann.predict(input_processed)[0][0]
 
     if prob > best_threshold:
-        return f" Likely to Churn"
+        return f"The customer is likely to Churn"
     else:
-        return f"Likely to Stay"
+        return f"The customer is likely to Stay"
 
 st.set_page_config(layout="wide")
 st.title("📊 Customer Churn Prediction")
@@ -89,6 +89,7 @@ if st.button("Predict Churn"):
 
         except Exception as e:
             st.error(f"Error in prediction: {e}")
+
 
 
 
