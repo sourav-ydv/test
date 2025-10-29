@@ -19,31 +19,22 @@ ann = load_ann()
 with open("preprocessor.pkl", "rb") as f:
     preprocessor = pickle.load(f)
 
-best_threshold = 0.55  # from your tuning
+best_threshold = 0.55
 
-# ============================
-# Prediction Function
-# ============================
 def churn_prediction(input_dict):
-    df_input = pd.DataFrame([input_dict])   # convert to DataFrame
+    df_input = pd.DataFrame([input_dict])  
 
-    # Apply same preprocessing (OHE + scaling)
     input_processed = preprocessor.transform(df_input)
 
-    # Predict probability
     prob = ann.predict(input_processed)[0][0]
 
     if prob > best_threshold:
-        return f"⚠️ Likely to Churn (Prob={prob:.2f})"
+        return f" Likely to Churn"
     else:
-        return f"✅ Likely to Stay (Prob={prob:.2f})"
+        return f"Likely to Stay"
 
-
-# ============================
-# Main App
-# ============================
 st.set_page_config(layout="wide")
-st.title("📊 Customer Churn Prediction (ANN + Preprocessing)")
+st.title("📊 Customer Churn Prediction")
 
 col1, space, col2 = st.columns([1.5, 0.2, 1.5])
 
@@ -68,11 +59,11 @@ if st.button("Predict Churn"):
     dropdowns = [Contract, PaperlessBilling, PaymentMethod, InternetService, OnlineSecurity, TechSupport]
 
     if any(option is None for option in dropdowns):
-        st.error("⚠️ Please fill all fields before prediction.")
+        st.error("Please fill all fields before prediction.")
     else:
         try:
             input_dict = {
-                "gender": "Female",             # default
+                "gender": "Female",          
                 "SeniorCitizen": 0,
                 "Partner": "No",
                 "Dependents": "No",
@@ -81,11 +72,11 @@ if st.button("Predict Churn"):
                 "MultipleLines": "No",
                 "InternetService": InternetService,
                 "OnlineSecurity": OnlineSecurity,
-                "OnlineBackup": "No",           # default
-                "DeviceProtection": "No",       # default
+                "OnlineBackup": "No",   
+                "DeviceProtection": "No",   
                 "TechSupport": TechSupport,
-                "StreamingTV": "No",            # default
-                "StreamingMovies": "No",        # default
+                "StreamingTV": "No",          
+                "StreamingMovies": "No",    
                 "Contract": Contract,
                 "PaperlessBilling": PaperlessBilling,
                 "PaymentMethod": PaymentMethod,
@@ -98,6 +89,7 @@ if st.button("Predict Churn"):
 
         except Exception as e:
             st.error(f"Error in prediction: {e}")
+
 
 
 
